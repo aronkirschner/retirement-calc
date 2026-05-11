@@ -114,14 +114,11 @@
     font-variant-numeric: tabular-nums;
     font-family: inherit;
     text-align: right;
-    width: 80px;
+    width: 90px;
     outline: none;
     padding: 1px 0;
-    -moz-appearance: textfield;
   }
   .num-input:hover, .num-input:focus { border-bottom-color: var(--accent); }
-  .num-input::-webkit-outer-spin-button,
-  .num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .results {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -213,19 +210,19 @@
 
       <div class="input-row">
         <label>Current age</label>
-        <span class="value"><input type="number" class="num-input" id="ni_currentAge" min="20" max="70" step="1" value="35"></span>
+        <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_currentAge"></span>
       </div>
       <input class="slider" type="range" id="currentAge" min="20" max="70" step="1" value="35">
 
       <div class="input-row">
         <label>Retirement age</label>
-        <span class="value"><input type="number" class="num-input" id="ni_retireAge" min="40" max="80" step="1" value="65"></span>
+        <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_retireAge"></span>
       </div>
       <input class="slider" type="range" id="retireAge" min="40" max="80" step="1" value="65">
 
       <div class="input-row">
         <label>Plan to age</label>
-        <span class="value"><input type="number" class="num-input" id="ni_planAge" min="70" max="105" step="1" value="95"></span>
+        <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_planAge"></span>
       </div>
       <input class="slider" type="range" id="planAge" min="70" max="105" step="1" value="95">
 
@@ -233,13 +230,13 @@
 
       <div class="input-row">
         <label>Current savings</label>
-        <span class="value">$<input type="number" class="num-input" id="ni_currentSavings" min="0" step="10000" value="100000"></span>
+        <span class="value">$<input type="text" inputmode="numeric" class="num-input" id="ni_currentSavings"></span>
       </div>
       <input class="slider" type="range" id="currentSavings" min="0" max="10000000" step="10000" value="100000">
 
       <div class="input-row">
         <label>Annual savings (today's $)</label>
-        <span class="value">$<input type="number" class="num-input" id="ni_annualSavings" min="0" step="1000" value="25000"></span>
+        <span class="value">$<input type="text" inputmode="numeric" class="num-input" id="ni_annualSavings"></span>
       </div>
       <input class="slider" type="range" id="annualSavings" min="0" max="500000" step="1000" value="25000">
 
@@ -247,19 +244,19 @@
 
       <div class="input-row">
         <label>Annual spending (today's $)</label>
-        <span class="value">$<input type="number" class="num-input" id="ni_spending" min="0" step="1000" value="80000"></span>
+        <span class="value">$<input type="text" inputmode="numeric" class="num-input" id="ni_spending"></span>
       </div>
       <input class="slider" type="range" id="spending" min="0" max="1000000" step="1000" value="80000">
 
       <div class="input-row">
         <label>Social Security / pension (today's $/yr)</label>
-        <span class="value">$<input type="number" class="num-input" id="ni_ss" min="0" step="500" value="30000"></span>
+        <span class="value">$<input type="text" inputmode="numeric" class="num-input" id="ni_ss"></span>
       </div>
       <input class="slider" type="range" id="ss" min="0" max="100000" step="500" value="30000">
 
       <div class="input-row">
         <label>Benefits start at age</label>
-        <span class="value"><input type="number" class="num-input" id="ni_ssAge" min="55" max="75" step="1" value="67"></span>
+        <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_ssAge"></span>
       </div>
       <input class="slider" type="range" id="ssAge" min="55" max="75" step="1" value="67">
 
@@ -267,7 +264,7 @@
 
       <div class="input-row">
         <label>Stocks / Bonds</label>
-        <span class="value"><input type="number" class="num-input" id="ni_stockPct" min="0" max="100" step="5" value="70">% / <span id="v_bondPct">30</span>%</span>
+        <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_stockPct">% / <span id="v_bondPct">30</span>%</span>
       </div>
       <input class="slider" type="range" id="stockPct" min="0" max="100" step="5" value="70">
       <div class="stock-bond-bar">
@@ -277,19 +274,19 @@
 
       <div class="input-row">
         <label>Stock return (nominal)</label>
-        <span class="value"><input type="number" class="num-input" id="ni_stockRet" min="0" max="30" step="0.1" value="8">%</span>
+        <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_stockRet">%</span>
       </div>
       <input class="slider" type="range" id="stockRet" min="0" max="15" step="0.1" value="8">
 
       <div class="input-row">
         <label>Bond return (nominal)</label>
-        <span class="value"><input type="number" class="num-input" id="ni_bondRet" min="0" max="20" step="0.1" value="4">%</span>
+        <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_bondRet">%</span>
       </div>
       <input class="slider" type="range" id="bondRet" min="0" max="10" step="0.1" value="4">
 
       <div class="input-row">
         <label>Inflation</label>
-        <span class="value"><input type="number" class="num-input" id="ni_inflation" min="0" max="20" step="0.1" value="3">%</span>
+        <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_inflation">%</span>
       </div>
       <input class="slider" type="range" id="inflation" min="0" max="8" step="0.1" value="3">
 
@@ -374,7 +371,7 @@
         <div style="padding:8px 0;font-size:13px;color:var(--text-dim);line-height:1.6;">
           Each year the portfolio earns a <em>blended return</em> based on your stock/bond mix. During working years, contributions are added (and grown with inflation). Starting at retirement, you withdraw the amount needed to cover spending (also inflation-adjusted) minus any Social Security or pension income (which starts at the age you set, and also rises with inflation).
           <br><br>
-          "Today's dollars" divides nominal balances by cumulative inflation, so you can see what the money is actually worth in today's purchasing power. The "nest egg needed" is the present-value lump sum — in today's dollars — that would just barely fund all net withdrawals from retirement through your plan-to age, discounted at the real return rate. Your actual projected portfolio at retirement (also in today's dollars) should comfortably exceed this number.
+          "Today's dollars" divides nominal balances by cumulative inflation, so you can see what the money is actually worth in today's purchasing power. The "nest egg needed" is the present-value lump sum — in today's dollars — that would just barely fund all net withdrawals from retirement through your plan-to age, discounted at the real return rate. When surplus equals zero, the portfolio hits exactly $0 at your plan-to age.
           <br><br>
           <strong>Limitations:</strong> Uses constant average returns — no sequence-of-returns risk, no taxes, no healthcare shocks, no account for required minimum distributions. Real planning should add a meaningful buffer for all of these. For a US 70/30 portfolio, a withdrawal rate around 3.5–4% of the starting balance is the common rule of thumb.
         </div>
@@ -384,6 +381,9 @@
 </div>
 
 <script>
+const DOLLAR_INPUTS  = new Set(['currentSavings', 'annualSavings', 'spending', 'ss']);
+const DECIMAL_INPUTS = new Set(['stockRet', 'bondRet', 'inflation']);
+
 const fmt = (n) => {
   if (!isFinite(n)) return '–';
   const sign = n < 0 ? '-' : '';
@@ -395,13 +395,22 @@ const fmt = (n) => {
 };
 const fmtFull = (n) => (n < 0 ? '-' : '') + '$' + Math.round(Math.abs(n)).toLocaleString();
 
+// Format a value for display in a ni_ input (with commas for dollars).
+function formatNi(id, val) {
+  const n = parseFloat(String(val).replace(/,/g, ''));
+  if (isNaN(n)) return '';
+  if (DOLLAR_INPUTS.has(id))  return Math.round(n).toLocaleString();
+  if (DECIMAL_INPUTS.has(id)) return n.toFixed(1);
+  return Math.round(n).toString();
+}
+
 const inputs = ['currentAge', 'retireAge', 'planAge', 'currentSavings', 'annualSavings',
   'spending', 'ss', 'ssAge', 'stockPct', 'stockRet', 'bondRet', 'inflation'];
 
-// Number inputs are the source of truth; sliders are visual affordances clamped to their range.
+// Number inputs are source of truth; sliders are visual affordances clamped to their range.
 const num = (id) => {
   const ni = document.getElementById('ni_' + id);
-  if (ni) { const v = parseFloat(ni.value); return isNaN(v) ? 0 : v; }
+  if (ni) { const v = parseFloat(ni.value.replace(/,/g, '')); return isNaN(v) ? 0 : v; }
   return parseFloat(document.getElementById(id).value);
 };
 
@@ -425,21 +434,21 @@ function simulate(p, retireAge) {
     const spendNominal  = isRetired ? p.spending * inflationFactor : 0;
     const ssNominal     = (isRetired && hasSS) ? p.ss * inflationFactor : 0;
     const netWithdrawal = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
+    const returns       = bal * p.blended;
 
-    const returns = bal * p.blended;
     bal = bal + returns + contribution - netWithdrawal;
     if (bal < 0 && depletedAt === null) { depletedAt = age; bal = 0; }
 
     rows.push({
       age, year: thisYear + offset,
-      contribution, spendNominal, ssNominal, netWithdrawal, returns,
+      contribution, returns, spendNominal, ssNominal, netWithdrawal,
       balNominal: bal,
       balReal: bal / inflationFactor,
       isRetireYear: age === retireAge,
     });
   }
 
-  // Use balance entering retirement (last working year) so gap=0 means portfolio hits $0 at planAge.
+  // Use balance entering retirement (end of last working year) so gap=0 means portfolio hits $0 at planAge.
   const enteringRow = rows.find(r => r.age === retireAge - 1);
   const portfolioAtRetire     = enteringRow ? enteringRow.balNominal : p.currentSavings;
   const portfolioAtRetireReal = enteringRow ? enteringRow.balReal    : p.currentSavings;
@@ -470,14 +479,14 @@ function findBreakeven(p) {
 
 function project() {
   const p = {
-    currentAge:    num('currentAge'),
-    planAge:       Math.max(num('currentAge') + 2, num('planAge')),
+    currentAge:     num('currentAge'),
+    planAge:        Math.max(num('currentAge') + 2, num('planAge')),
     currentSavings: num('currentSavings'),
-    annualSavings: num('annualSavings'),
-    spending:      num('spending'),
-    ss:            num('ss'),
-    ssAge:         num('ssAge'),
-    inflation:     num('inflation') / 100,
+    annualSavings:  num('annualSavings'),
+    spending:       num('spending'),
+    ss:             num('ss'),
+    ssAge:          num('ssAge'),
+    inflation:      num('inflation') / 100,
   };
   const stockPct = num('stockPct') / 100;
   const stockRet = num('stockRet') / 100;
@@ -596,38 +605,33 @@ function project() {
 function buildAnnotation(retireAge) {
   return {
     annotations: {
-      retireLine: { type: 'line', scaleID: 'x', value: retireAge, borderColor: 'rgba(74,158,255,0.4)', borderWidth: 1, borderDash: [4, 4] },
+      retireLine:  { type: 'line',  scaleID: 'x', value: retireAge, borderColor: 'rgba(74,158,255,0.4)', borderWidth: 1, borderDash: [4, 4] },
       retireLabel: { type: 'label', scaleID: 'x', value: retireAge, content: 'Retirement', color: '#8b95a3', font: { size: 11 }, position: 'start', yAdjust: -10 },
     },
   };
 }
 
-// Sync slider position from number input value (clamped to slider range).
+// Sync slider from ni_ value (clamped to slider range). Called when user types.
 function syncSlider(id) {
   const slider = document.getElementById(id);
   const val = num(id);
   slider.value = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), val));
-  if (id === 'stockPct') {
-    const sp = Math.max(0, Math.min(100, val));
-    document.getElementById('v_bondPct').textContent = Math.round(100 - sp);
-    document.getElementById('bar_stock').style.width = sp + '%';
-    document.getElementById('bar_bond').style.width  = (100 - sp) + '%';
-  }
+  if (id === 'stockPct') updateBondBar(Math.max(0, Math.min(100, val)));
 }
 
-// Sync number input from slider value (called after slider drag).
+// Sync ni_ from slider value with comma formatting. Called when user drags slider.
 function syncNumInput(id) {
   const slider = document.getElementById(id);
   const ni = document.getElementById('ni_' + id);
   if (!ni) return;
-  const isDecimal = ['stockRet', 'bondRet', 'inflation'].includes(id);
-  ni.value = isDecimal ? parseFloat(slider.value).toFixed(1) : slider.value;
-  if (id === 'stockPct') {
-    const sp = parseFloat(slider.value);
-    document.getElementById('v_bondPct').textContent = 100 - sp;
-    document.getElementById('bar_stock').style.width = sp + '%';
-    document.getElementById('bar_bond').style.width  = (100 - sp) + '%';
-  }
+  ni.value = formatNi(id, slider.value);
+  if (id === 'stockPct') updateBondBar(parseFloat(slider.value));
+}
+
+function updateBondBar(sp) {
+  document.getElementById('v_bondPct').textContent = Math.round(100 - sp);
+  document.getElementById('bar_stock').style.width = sp + '%';
+  document.getElementById('bar_bond').style.width  = (100 - sp) + '%';
 }
 
 function saveInputs() {
@@ -643,13 +647,13 @@ function loadInputs() {
     inputs.forEach(id => {
       if (saved[id] === undefined) return;
       const ni = document.getElementById('ni_' + id);
-      if (ni) ni.value = saved[id];
+      if (ni) ni.value = formatNi(id, saved[id]);
       syncSlider(id);
     });
   } catch (e) {}
 }
 
-// Slider drag → update number input → recalculate.
+// Slider drag → format ni_ → recalculate.
 inputs.forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
     syncNumInput(id);
@@ -658,7 +662,7 @@ inputs.forEach(id => {
   });
 });
 
-// Number input change → update slider → recalculate.
+// Typing → sync slider → recalculate.
 inputs.forEach(id => {
   const ni = document.getElementById('ni_' + id);
   if (!ni) return;
@@ -666,6 +670,11 @@ inputs.forEach(id => {
     syncSlider(id);
     project();
     saveInputs();
+  });
+  // Reformat with commas when focus leaves.
+  ni.addEventListener('blur', () => {
+    const val = num(id);
+    ni.value = formatNi(id, val);
   });
 });
 
@@ -676,11 +685,16 @@ document.getElementById('btnApplyBreakeven').addEventListener('click', (e) => {
   const ni = document.getElementById('ni_retireAge');
   const target = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), parseInt(v)));
   slider.value = target;
-  if (ni) ni.value = target;
+  if (ni) ni.value = formatNi('retireAge', target);
   project();
   saveInputs();
 });
 
+// Initialize: load saved values (or use slider defaults), format all ni_ inputs, then render.
+inputs.forEach(id => {
+  const ni = document.getElementById('ni_' + id);
+  if (ni) ni.value = formatNi(id, document.getElementById(id).value);
+});
 loadInputs();
 project();
 </script>
