@@ -311,7 +311,7 @@
         <div class="stat" style="border-color: var(--accent); background: rgba(74,158,255,0.08);">
           <div class="stat-label">Earliest breakeven retirement age</div>
           <div class="stat-value" id="s_breakeven">–</div>
-          <div class="stat-sub" style="margin-bottom:4px;">Deterministic model — check probability of success for real-world risk</div>
+          <div class="stat-sub" style="margin-bottom:4px;">Earliest age where median simulation survives to plan age</div>
           <div class="stat-sub">
             <button id="btnApplyBreakeven" style="
               background: var(--accent); color: white; border: none;
@@ -513,10 +513,25 @@ function runMonteCarlo(p, retireAge, N = 1000) {
 function findBreakeven(p) {
   const minR = p.currentAge + 1;
   const maxR = Math.min(p.planAge - 1, p.currentAge + 60);
-  for (let R = minR; R <= maxR; R++) {
-    if (simulate(p, R).depletedAt === null) return R;
+
+  const finalP50 = (R) => {
+    const mc = runMonteCarlo(p, R, 200);
+    return mc.realPct[mc.realPct.length - 1].p50;
+  };
+
+  // If even the latest age fails, nothing works.
+  if (finalP50(maxR) < 0) return null;
+  // If the earliest age already works, return immediately.
+  if (finalP50(minR) >= 0) return minR;
+
+  // Binary search for the crossover point.
+  let lo = minR, hi = maxR;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (finalP50(mid) >= 0) hi = mid;
+    else lo = mid + 1;
   }
-  return null;
+  return lo;
 }
 
 function project() {
@@ -673,6 +688,7 @@ function project() {
 function buildAnnotation(retireAge) {
   return {
     annotations: {
+      zeroLine:    { type: 'line',  scaleID: 'y', value: 0, borderColor: 'rgba(255,255,255,0.35)', borderWidth: 1.5 },
       retireLine:  { type: 'line',  scaleID: 'x', value: retireAge, borderColor: 'rgba(74,158,255,0.4)', borderWidth: 1, borderDash: [4, 4] },
       retireLabel: { type: 'label', scaleID: 'x', value: retireAge, content: 'Retirement', color: '#8b95a3', font: { size: 11 }, position: 'start', yAdjust: -10 },
     },
