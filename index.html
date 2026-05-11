@@ -326,8 +326,8 @@
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
           <div style="font-size:14px;font-weight:600;">Portfolio value over time</div>
           <div class="legend-row">
-            <span><span class="legend-band" style="background:rgba(74,222,128,0.3)"></span>P25–P75 range</span>
-            <span><span class="legend-dot" style="background:var(--good)"></span>Median — all in today's $</span>
+            <span><span class="legend-band" style="background:rgba(74,222,128,0.3)"></span>MC P25–P75 range</span>
+            <span><span class="legend-dot" style="background:var(--accent)"></span>Constant returns (today's $)</span>
           </div>
         </div>
         <div class="chart-wrap">
@@ -363,7 +363,7 @@
         <div style="padding:8px 0;font-size:13px;color:var(--text-dim);line-height:1.6;">
           Each year the portfolio earns a <em>blended return</em> based on your stock/bond mix. During working years, contributions are added (and grown with inflation). Starting at retirement, you withdraw the amount needed to cover spending (also inflation-adjusted) minus any Social Security or pension income.
           <br><br>
-          <strong>Monte Carlo simulation</strong> runs 1,000 scenarios where each year's return is drawn randomly from a normal distribution centred on your blended return with the volatility (σ) you set. Probability of success is the share of simulations where the portfolio survives to your plan-to age. The chart shows all values in today's dollars: the shaded band is the interquartile range (P25–P75) and the solid line is the median.
+          The <strong>blue line</strong> on the chart is the deterministic (constant returns) path — the same numbers shown in the year-by-year table. The <strong>green band</strong> shows the Monte Carlo interquartile range (P25–P75): 1,000 simulations where each year's return is drawn from a normal distribution centred on your blended return with the volatility (σ) you set. Because volatility creates variance drag, the deterministic line typically sits above the band's midpoint — this gap grows with time and equity allocation. Probability of success is the share of MC simulations where the portfolio survives to your plan-to age.
           <br><br>
           "Today's dollars" divides nominal balances by cumulative inflation. The "nest egg needed" is the present-value lump sum — in today's dollars — to fund all net withdrawals through your plan-to age. When surplus equals zero in the deterministic model, the portfolio hits exactly $0 at plan age.
           <br><br>
@@ -523,25 +523,11 @@ function runMonteCarlo(p, retireAge, N = 1000) {
 function findBreakeven(p) {
   const minR = p.currentAge + 1;
   const maxR = Math.min(p.planAge - 1, p.currentAge + 60);
-
-  const finalP50 = (R) => {
-    const mc = runMonteCarlo(p, R, 200);
-    return mc.realPct[mc.realPct.length - 1].p50;
-  };
-
-  // If even the latest age fails, nothing works.
-  if (finalP50(maxR) < 0) return null;
-  // If the earliest age already works, return immediately.
-  if (finalP50(minR) >= 0) return minR;
-
-  // Binary search for the crossover point.
-  let lo = minR, hi = maxR;
-  while (lo < hi) {
-    const mid = Math.floor((lo + hi) / 2);
-    if (finalP50(mid) >= 0) hi = mid;
-    else lo = mid + 1;
+  for (let R = minR; R <= maxR; R++) {
+    const s = simulate(p, R);
+    if (s.depletedAt === null && s.gapReal >= 0) return R;
   }
-  return lo;
+  return null;
 }
 
 function project() {
@@ -620,17 +606,17 @@ function project() {
   srEl.textContent  = successPct.toFixed(1) + '%';
   srEl.style.color  = successPct >= 90 ? 'var(--good)' : successPct >= 70 ? 'var(--warn)' : 'var(--bad)';
 
-  // Chart — all values in today's $, P25–P75 band.
-  const labels     = rows.map(r => r.age);
-  const p75Data    = mc.realPct.map(v => v.p75);
-  const p25Data    = mc.realPct.map(v => v.p25);
-  const p50Data    = mc.realPct.map(v => v.p50);
+  // Chart — today's $: deterministic line + MC P25–P75 band.
+  const labels    = rows.map(r => r.age);
+  const detData   = rows.map(r => r.balReal);
+  const p75Data   = mc.realPct.map(v => v.p75);
+  const p25Data   = mc.realPct.map(v => v.p25);
 
   if (chart) {
     chart.data.labels            = labels;
     chart.data.datasets[0].data = p75Data;
     chart.data.datasets[1].data = p25Data;
-    chart.data.datasets[2].data = p50Data;
+    chart.data.datasets[2].data = detData;
     chart.options.plugins.annotation = buildAnnotation(retireAge);
     chart.update('none');
   } else {
@@ -646,9 +632,9 @@ function project() {
           // P25 lower bound.
           { label: 'P25', data: p25Data, borderWidth: 0, pointRadius: 0,
             fill: false, tension: 0.2 },
-          // Median today's $.
-          { label: "Median (today's $)", data: p50Data,
-            borderColor: '#4ade80', backgroundColor: 'transparent',
+          // Deterministic (constant returns) line.
+          { label: "Constant returns (today's $)", data: detData,
+            borderColor: '#4a9eff', backgroundColor: 'transparent',
             borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.2 },
         ],
       },
@@ -662,7 +648,7 @@ function project() {
             callbacks: {
               title: (items) => 'Age ' + items[0].label,
               label: (item)  => {
-                const lbls = ['75th pct', '25th pct', 'Median'];
+                const lbls = ['MC 75th pct', 'MC 25th pct', 'Constant returns'];
                 return lbls[item.datasetIndex] + " (today's $): " + fmtFull(item.parsed.y);
               },
             },
