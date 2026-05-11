@@ -36,9 +36,7 @@
     grid-template-columns: 380px 1fr;
     gap: 20px;
   }
-  @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
   .panel {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -89,16 +87,14 @@
   .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 16px;
-    height: 16px;
+    width: 16px; height: 16px;
     background: var(--accent);
     border-radius: 50%;
     cursor: pointer;
     border: 2px solid var(--bg);
   }
   .slider::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
+    width: 16px; height: 16px;
     background: var(--accent);
     border-radius: 50%;
     cursor: pointer;
@@ -131,15 +127,9 @@
     padding: 14px;
     border: 1px solid var(--border);
   }
-  .stat-label {
-    font-size: 11px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
-  }
+  .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
   .stat-value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .stat-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .stat-sub   { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
   .verdict {
     padding: 16px 20px;
     border-radius: 8px;
@@ -168,14 +158,9 @@
   }
   .stock-bond-bar .stock { background: var(--accent); }
   .stock-bond-bar .bond  { background: #8b95a3; }
-  .legend-row { display: flex; gap: 16px; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
-  .legend-dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    margin-right: 4px;
-    vertical-align: middle;
-  }
+  .legend-row { display: flex; gap: 16px; font-size: 11px; color: var(--text-dim); margin-top: 6px; flex-wrap: wrap; }
+  .legend-dot  { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .legend-band { display: inline-block; width: 14px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
   details {
     margin-top: 20px;
     background: var(--panel-2);
@@ -184,13 +169,7 @@
     border: 1px solid var(--border);
   }
   details summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-dim); }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 12px;
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-  }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; font-variant-numeric: tabular-nums; }
   th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); }
   th:first-child, td:first-child { text-align: left; }
   th { color: var(--text-dim); font-weight: 600; font-size: 11px; text-transform: uppercase; position: sticky; top: 0; background: var(--panel-2); }
@@ -260,7 +239,7 @@
       </div>
       <input class="slider" type="range" id="ssAge" min="55" max="75" step="1" value="67">
 
-      <div class="section-title">Portfolio mix</div>
+      <div class="section-title">Portfolio mix &amp; returns</div>
 
       <div class="input-row">
         <label>Stocks / Bonds</label>
@@ -290,7 +269,13 @@
       </div>
       <input class="slider" type="range" id="inflation" min="0" max="8" step="0.1" value="3">
 
-      <div class="note">Returns and inflation are long-term annual averages. Real-world returns vary year to year (sequence-of-returns risk).</div>
+      <div class="input-row">
+        <label>Annual volatility (σ)</label>
+        <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_sigma">%</span>
+      </div>
+      <input class="slider" type="range" id="sigma" min="0" max="30" step="0.5" value="12">
+
+      <div class="note">Volatility is the standard deviation of annual portfolio returns. Typical values: 100% stocks ≈ 17%, 70/30 ≈ 12%, 100% bonds ≈ 6%.</div>
     </div>
 
     <!-- RESULTS -->
@@ -314,9 +299,14 @@
           <div class="stat-sub">Today's $ to fund through age <span id="s_planAge2">95</span></div>
         </div>
         <div class="stat">
-          <div class="stat-label">Surplus / shortfall at retirement</div>
+          <div class="stat-label">Surplus / shortfall</div>
           <div class="stat-value" id="s_gap">–</div>
           <div class="stat-sub" id="s_gapNote">in today's $</div>
+        </div>
+        <div class="stat" id="stat_success">
+          <div class="stat-label">Probability of success</div>
+          <div class="stat-value" id="s_successRate">–</div>
+          <div class="stat-sub" id="s_successSub">Monte Carlo, 1,000 simulations</div>
         </div>
         <div class="stat" style="border-color: var(--accent); background: rgba(74,158,255,0.08);">
           <div class="stat-label">Earliest breakeven retirement age</div>
@@ -335,8 +325,9 @@
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
           <div style="font-size:14px;font-weight:600;">Portfolio value over time</div>
           <div class="legend-row">
-            <span><span class="legend-dot" style="background:var(--accent)"></span>Nominal $</span>
-            <span><span class="legend-dot" style="background:var(--good)"></span>Today's $</span>
+            <span><span class="legend-band" style="background:rgba(74,158,255,0.25)"></span>P10–P90 range</span>
+            <span><span class="legend-dot" style="background:var(--accent)"></span>Median (nominal)</span>
+            <span><span class="legend-dot" style="background:var(--good)"></span>Median (today's $)</span>
           </div>
         </div>
         <div class="chart-wrap">
@@ -345,7 +336,7 @@
       </div>
 
       <details>
-        <summary>Year-by-year projection</summary>
+        <summary>Year-by-year projection (deterministic)</summary>
         <div style="max-height:400px;overflow:auto;margin-top:8px;">
           <table id="projectionTable">
             <thead>
@@ -369,11 +360,13 @@
       <details>
         <summary>How this model works</summary>
         <div style="padding:8px 0;font-size:13px;color:var(--text-dim);line-height:1.6;">
-          Each year the portfolio earns a <em>blended return</em> based on your stock/bond mix. During working years, contributions are added (and grown with inflation). Starting at retirement, you withdraw the amount needed to cover spending (also inflation-adjusted) minus any Social Security or pension income (which starts at the age you set, and also rises with inflation).
+          Each year the portfolio earns a <em>blended return</em> based on your stock/bond mix. During working years, contributions are added (and grown with inflation). Starting at retirement, you withdraw the amount needed to cover spending (also inflation-adjusted) minus any Social Security or pension income.
           <br><br>
-          "Today's dollars" divides nominal balances by cumulative inflation, so you can see what the money is actually worth in today's purchasing power. The "nest egg needed" is the present-value lump sum — in today's dollars — that would just barely fund all net withdrawals from retirement through your plan-to age, discounted at the real return rate. When surplus equals zero, the portfolio hits exactly $0 at your plan-to age.
+          <strong>Monte Carlo simulation</strong> runs 1,000 scenarios where each year's return is drawn randomly from a normal distribution centred on your blended return with the volatility (σ) you set. Probability of success is the share of simulations where the portfolio survives to your plan-to age. The shaded band on the chart shows the 10th–90th percentile range of outcomes; the solid lines show the median.
           <br><br>
-          <strong>Limitations:</strong> Uses constant average returns — no sequence-of-returns risk, no taxes, no healthcare shocks, no account for required minimum distributions. Real planning should add a meaningful buffer for all of these. For a US 70/30 portfolio, a withdrawal rate around 3.5–4% of the starting balance is the common rule of thumb.
+          "Today's dollars" divides nominal balances by cumulative inflation. The "nest egg needed" is the present-value lump sum — in today's dollars — to fund all net withdrawals through your plan-to age. When surplus equals zero in the deterministic model, the portfolio hits exactly $0 at plan age.
+          <br><br>
+          <strong>Limitations:</strong> Returns are assumed normally distributed (no fat tails), no taxes, no healthcare shocks, no RMDs. The ~4% rule is a common rule of thumb for a 70/30 US portfolio.
         </div>
       </details>
     </div>
@@ -382,7 +375,7 @@
 
 <script>
 const DOLLAR_INPUTS  = new Set(['currentSavings', 'annualSavings', 'spending', 'ss']);
-const DECIMAL_INPUTS = new Set(['stockRet', 'bondRet', 'inflation']);
+const DECIMAL_INPUTS = new Set(['stockRet', 'bondRet', 'inflation', 'sigma']);
 
 const fmt = (n) => {
   if (!isFinite(n)) return '–';
@@ -395,7 +388,6 @@ const fmt = (n) => {
 };
 const fmtFull = (n) => (n < 0 ? '-' : '') + '$' + Math.round(Math.abs(n)).toLocaleString();
 
-// Format a value for display in a ni_ input (with commas for dollars).
 function formatNi(id, val) {
   const n = parseFloat(String(val).replace(/,/g, ''));
   if (isNaN(n)) return '';
@@ -405,17 +397,23 @@ function formatNi(id, val) {
 }
 
 const inputs = ['currentAge', 'retireAge', 'planAge', 'currentSavings', 'annualSavings',
-  'spending', 'ss', 'ssAge', 'stockPct', 'stockRet', 'bondRet', 'inflation'];
+  'spending', 'ss', 'ssAge', 'stockPct', 'stockRet', 'bondRet', 'inflation', 'sigma'];
 
-// Number inputs are source of truth; sliders are visual affordances clamped to their range.
 const num = (id) => {
   const ni = document.getElementById('ni_' + id);
   if (ni) { const v = parseFloat(ni.value.replace(/,/g, '')); return isNaN(v) ? 0 : v; }
   return parseFloat(document.getElementById(id).value);
 };
 
+// Box-Muller normal random number generator.
+function randn() {
+  const u = Math.random(), v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
 let chart;
 
+// Deterministic simulation — used for stat cards, table, and breakeven.
 function simulate(p, retireAge) {
   retireAge = Math.max(p.currentAge + 1, retireAge);
   const planAge = Math.max(retireAge + 1, p.planAge);
@@ -426,13 +424,13 @@ function simulate(p, retireAge) {
 
   for (let age = p.currentAge; age <= planAge; age++) {
     const offset = age - p.currentAge;
-    const inflationFactor = Math.pow(1 + p.inflation, offset);
-    const isRetired = age >= retireAge;
-    const hasSS = age >= p.ssAge;
+    const inflFactor = Math.pow(1 + p.inflation, offset);
+    const isRetired  = age >= retireAge;
+    const hasSS      = age >= p.ssAge;
 
-    const contribution  = isRetired ? 0 : p.annualSavings * inflationFactor;
-    const spendNominal  = isRetired ? p.spending * inflationFactor : 0;
-    const ssNominal     = (isRetired && hasSS) ? p.ss * inflationFactor : 0;
+    const contribution  = isRetired ? 0 : p.annualSavings * inflFactor;
+    const spendNominal  = isRetired ? p.spending * inflFactor : 0;
+    const ssNominal     = (isRetired && hasSS) ? p.ss * inflFactor : 0;
     const netWithdrawal = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
     const returns       = bal * p.blended;
 
@@ -443,36 +441,83 @@ function simulate(p, retireAge) {
       age, year: thisYear + offset,
       contribution, returns, spendNominal, ssNominal, netWithdrawal,
       balNominal: bal,
-      balReal: bal / inflationFactor,
+      balReal: bal / inflFactor,
       isRetireYear: age === retireAge,
     });
   }
 
-  // Use balance entering retirement (end of last working year) so gap=0 means portfolio hits $0 at planAge.
-  const enteringRow = rows.find(r => r.age === retireAge - 1);
+  const enteringRow           = rows.find(r => r.age === retireAge - 1);
   const portfolioAtRetire     = enteringRow ? enteringRow.balNominal : p.currentSavings;
   const portfolioAtRetireReal = enteringRow ? enteringRow.balReal    : p.currentSavings;
 
   let required = 0;
   for (let age = retireAge; age <= planAge; age++) {
     const ssThisYear = age >= p.ssAge ? p.ss : 0;
-    const netReal = Math.max(0, p.spending - ssThisYear);
-    const k = age - retireAge + 1;
+    const netReal    = Math.max(0, p.spending - ssThisYear);
+    const k          = age - retireAge + 1;
     required += netReal / Math.pow(1 + p.realReturn, k);
   }
 
-  const gapReal = portfolioAtRetireReal - required;
-
   return { retireAge, planAge, rows, depletedAt,
-           portfolioAtRetire, portfolioAtRetireReal, required, gapReal };
+           portfolioAtRetire, portfolioAtRetireReal, required,
+           gapReal: portfolioAtRetireReal - required };
+}
+
+// Monte Carlo simulation — returns probability of success and per-age percentiles.
+function runMonteCarlo(p, retireAge, N = 1000) {
+  retireAge     = Math.max(p.currentAge + 1, retireAge);
+  const planAge = Math.max(retireAge + 1, p.planAge);
+  const years   = planAge - p.currentAge + 1;
+
+  let successCount = 0;
+  const nomByAge  = Array.from({length: years}, () => []);
+  const realByAge = Array.from({length: years}, () => []);
+
+  for (let sim = 0; sim < N; sim++) {
+    let bal      = p.currentSavings;
+    let depleted = false;
+
+    for (let i = 0; i < years; i++) {
+      const age       = p.currentAge + i;
+      const inflFactor = Math.pow(1 + p.inflation, i);
+      const isRetired  = age >= retireAge;
+      const hasSS      = age >= p.ssAge;
+
+      // Draw this year's return from N(blended, sigma).
+      const r = Math.max(-1, p.blended + p.sigma * randn());
+
+      const contribution  = isRetired ? 0 : p.annualSavings * inflFactor;
+      const spendNominal  = isRetired ? p.spending * inflFactor : 0;
+      const ssNominal     = (isRetired && hasSS) ? p.ss * inflFactor : 0;
+      const netWithdrawal = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
+
+      bal = bal * (1 + r) + contribution - netWithdrawal;
+      if (bal < 0) { bal = 0; depleted = true; }
+
+      nomByAge[i].push(bal);
+      realByAge[i].push(bal / inflFactor);
+    }
+    if (!depleted) successCount++;
+  }
+
+  const pct = (arr, p) => {
+    const sorted = new Float64Array(arr).sort();
+    return sorted[Math.floor(sorted.length * p)];
+  };
+
+  const nomPct   = nomByAge.map(vals => ({
+    p10: pct(vals, 0.10), p50: pct(vals, 0.50), p90: pct(vals, 0.90),
+  }));
+  const realP50  = realByAge.map(vals => pct(vals, 0.50));
+
+  return { successRate: successCount / N, nomPct, realP50 };
 }
 
 function findBreakeven(p) {
   const minR = p.currentAge + 1;
   const maxR = Math.min(p.planAge - 1, p.currentAge + 60);
   for (let R = minR; R <= maxR; R++) {
-    const s = simulate(p, R);
-    if (s.depletedAt === null) return R;
+    if (simulate(p, R).depletedAt === null) return R;
   }
   return null;
 }
@@ -487,6 +532,7 @@ function project() {
     ss:             num('ss'),
     ssAge:          num('ssAge'),
     inflation:      num('inflation') / 100,
+    sigma:          num('sigma') / 100,
   };
   const stockPct = num('stockPct') / 100;
   const stockRet = num('stockRet') / 100;
@@ -499,6 +545,7 @@ function project() {
   const { planAge, rows, depletedAt,
           portfolioAtRetire, portfolioAtRetireReal, required, gapReal } = sim;
 
+  // Deterministic stat cards.
   document.getElementById('s_blended').textContent     = (p.blended * 100).toFixed(1) + '%';
   document.getElementById('s_real').textContent         = (p.realReturn * 100).toFixed(1) + '%';
   document.getElementById('s_atRetire').textContent     = fmt(portfolioAtRetire);
@@ -509,12 +556,12 @@ function project() {
   document.getElementById('s_gap').style.color          = gapReal >= 0 ? 'var(--good)' : 'var(--bad)';
   document.getElementById('s_gapNote').textContent      = (gapReal >= 0 ? 'surplus' : 'shortfall') + " in today's $";
 
+  // Breakeven.
   const breakeven   = findBreakeven(p);
   const breakevenEl = document.getElementById('s_breakeven');
   const btn         = document.getElementById('btnApplyBreakeven');
   if (breakeven === null) {
-    breakevenEl.textContent = '—';
-    breakevenEl.style.color = 'var(--bad)';
+    breakevenEl.textContent = '—'; breakevenEl.style.color = 'var(--bad)';
     btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
   } else {
     breakevenEl.textContent = breakeven;
@@ -523,6 +570,7 @@ function project() {
     btn.dataset.value = breakeven;
   }
 
+  // Verdict.
   const verdict = document.getElementById('verdict');
   if (depletedAt !== null) {
     const shortfall = planAge - depletedAt;
@@ -543,13 +591,26 @@ function project() {
       `Portfolio ends at age ${planAge} with ${fmtFull(finalBal)} remaining (today's $).`;
   }
 
-  const labels   = rows.map(r => r.age);
-  const nomData  = rows.map(r => r.balNominal);
-  const realData = rows.map(r => r.balReal);
+  // Monte Carlo.
+  const mc = runMonteCarlo(p, retireAge);
+  const successPct = mc.successRate * 100;
+  const srEl = document.getElementById('s_successRate');
+  srEl.textContent  = successPct.toFixed(1) + '%';
+  srEl.style.color  = successPct >= 90 ? 'var(--good)' : successPct >= 70 ? 'var(--warn)' : 'var(--bad)';
+
+  // Chart.
+  const labels      = rows.map(r => r.age);
+  const p10NomData  = mc.nomPct.map(v => v.p10);
+  const p90NomData  = mc.nomPct.map(v => v.p90);
+  const p50NomData  = mc.nomPct.map(v => v.p50);
+  const p50RealData = mc.realP50;
+
   if (chart) {
-    chart.data.labels = labels;
-    chart.data.datasets[0].data = nomData;
-    chart.data.datasets[1].data = realData;
+    chart.data.labels              = labels;
+    chart.data.datasets[0].data   = p90NomData;
+    chart.data.datasets[1].data   = p10NomData;
+    chart.data.datasets[2].data   = p50NomData;
+    chart.data.datasets[3].data   = p50RealData;
     chart.options.plugins.annotation = buildAnnotation(retireAge);
     chart.update('none');
   } else {
@@ -559,8 +620,20 @@ function project() {
       data: {
         labels,
         datasets: [
-          { label: 'Nominal $',  data: nomData,  borderColor: '#4a9eff', backgroundColor: 'rgba(74,158,255,0.12)', fill: true, tension: 0.2, pointRadius: 0, borderWidth: 2 },
-          { label: "Today's $",  data: realData, borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.08)', fill: true, tension: 0.2, pointRadius: 0, borderWidth: 2 },
+          // P90 upper bound — fills down to the P10 dataset (index +1).
+          { label: 'P90', data: p90NomData, borderWidth: 0, pointRadius: 0,
+            fill: '+1', backgroundColor: 'rgba(74,158,255,0.18)', tension: 0.2 },
+          // P10 lower bound.
+          { label: 'P10', data: p10NomData, borderWidth: 0, pointRadius: 0,
+            fill: false, tension: 0.2 },
+          // Median nominal.
+          { label: 'Median (nominal)', data: p50NomData,
+            borderColor: '#4a9eff', backgroundColor: 'transparent',
+            borderWidth: 2, pointRadius: 0, fill: false, tension: 0.2 },
+          // Median today's $.
+          { label: "Median (today's $)", data: p50RealData,
+            borderColor: '#4ade80', backgroundColor: 'transparent',
+            borderWidth: 2, pointRadius: 0, fill: false, tension: 0.2 },
         ],
       },
       options: {
@@ -571,8 +644,11 @@ function project() {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              title: (items) => 'Age ' + items[0].label,
-              label: (item)  => item.dataset.label + ': ' + fmtFull(item.parsed.y),
+              title:  (items) => 'Age ' + items[0].label,
+              label:  (item)  => {
+                const labels = ['90th pct', '10th pct', 'Median (nominal)', "Median (today's $)"];
+                return labels[item.datasetIndex] + ': ' + fmtFull(item.parsed.y);
+              },
             },
           },
           annotation: buildAnnotation(retireAge),
@@ -585,6 +661,7 @@ function project() {
     });
   }
 
+  // Year-by-year table.
   const tbody = document.querySelector('#projectionTable tbody');
   tbody.innerHTML = '';
   rows.forEach(r => {
@@ -611,7 +688,6 @@ function buildAnnotation(retireAge) {
   };
 }
 
-// Sync slider from ni_ value (clamped to slider range). Called when user types.
 function syncSlider(id) {
   const slider = document.getElementById(id);
   const val = num(id);
@@ -619,7 +695,6 @@ function syncSlider(id) {
   if (id === 'stockPct') updateBondBar(Math.max(0, Math.min(100, val)));
 }
 
-// Sync ni_ from slider value with comma formatting. Called when user drags slider.
 function syncNumInput(id) {
   const slider = document.getElementById(id);
   const ni = document.getElementById('ni_' + id);
@@ -653,17 +728,12 @@ function loadInputs() {
   } catch (e) {}
 }
 
-// Slider drag → format ni_ → recalculate.
 inputs.forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
     syncNumInput(id);
     project();
     saveInputs();
   });
-});
-
-// Typing → sync slider → recalculate.
-inputs.forEach(id => {
   const ni = document.getElementById('ni_' + id);
   if (!ni) return;
   ni.addEventListener('input', () => {
@@ -671,10 +741,8 @@ inputs.forEach(id => {
     project();
     saveInputs();
   });
-  // Reformat with commas when focus leaves.
   ni.addEventListener('blur', () => {
-    const val = num(id);
-    ni.value = formatNi(id, val);
+    ni.value = formatNi(id, num(id));
   });
 });
 
@@ -682,7 +750,7 @@ document.getElementById('btnApplyBreakeven').addEventListener('click', (e) => {
   const v = e.target.dataset.value;
   if (!v) return;
   const slider = document.getElementById('retireAge');
-  const ni = document.getElementById('ni_retireAge');
+  const ni     = document.getElementById('ni_retireAge');
   const target = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), parseInt(v)));
   slider.value = target;
   if (ni) ni.value = formatNi('retireAge', target);
@@ -690,7 +758,6 @@ document.getElementById('btnApplyBreakeven').addEventListener('click', (e) => {
   saveInputs();
 });
 
-// Initialize: load saved values (or use slider defaults), format all ni_ inputs, then render.
 inputs.forEach(id => {
   const ni = document.getElementById('ni_' + id);
   if (ni) ni.value = formatNi(id, document.getElementById(id).value);
