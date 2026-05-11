@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retirement Savings Model</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a212b;
+    --panel-2: #232c39;
+    --border: #2d3748;
+    --text: #e6edf3;
+    --text-dim: #8b95a3;
+    --accent: #4a9eff;
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 24px;
+    line-height: 1.5;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 28px; margin: 0 0 4px; font-weight: 600; }
+  .subtitle { color: var(--text-dim); margin-bottom: 24px; font-size: 14px; }
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin: 18px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title:first-child { margin-top: 0; }
+  .input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .input-row label { font-size: 13px; color: var(--text); flex: 1; }
+  .input-row .value {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 90px;
+    text-align: right;
+    font-size: 13px;
+  }
+  .slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--panel-2);
+    border-radius: 2px;
+    outline: none;
+    margin: 4px 0 14px;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+  .slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+  .results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat {
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 14px;
+    border: 1px solid var(--border);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .verdict {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 15px;
+    border-left: 4px solid var(--good);
+    background: rgba(74, 222, 128, 0.08);
+  }
+  .verdict.bad { border-color: var(--bad); background: rgba(248, 113, 113, 0.08); }
+  .verdict.warn { border-color: var(--warn); background: rgba(251, 191, 36, 0.08); }
+  .verdict strong { display: block; margin-bottom: 4px; font-size: 16px; }
+  .chart-wrap {
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    height: 360px;
+    position: relative;
+  }
+  .stock-bond-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 4px 0 14px;
+  }
+  .stock-bond-bar .stock { background: var(--accent); }
+  .stock-bond-bar .bond  { background: #8b95a3; }
+  .legend-row { display: flex; gap: 16px; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+  .legend-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+  details {
+    margin-top: 20px;
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+  }
+  details summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-dim); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--text-dim); font-weight: 600; font-size: 11px; text-transform: uppercase; position: sticky; top: 0; background: var(--panel-2); }
+  tr.retire-row td { background: rgba(74, 158, 255, 0.08); font-weight: 600; }
+  .note { font-size: 11px; color: var(--text-dim); margin-top: 8px; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Retirement Savings Model</h1>
+  <div class="subtitle">Adjust the inputs to see how long your savings will last and how much you need to retire.</div>
+
+  <div class="layout">
+    <!-- INPUTS -->
+    <div class="panel">
+      <div class="section-title">About you</div>
+      <div class="input-row"><label>Current age</label><span class="value"><span id="v_currentAge">35</span></span></div>
+      <input class="slider" type="range" id="currentAge" min="20" max="70" step="1" value="35">
+
+      <div class="input-row"><label>Retirement age</label><span class="value"><span id="v_retireAge">65</span></span></div>
+      <input class="slider" type="range" id="retireAge" min="40" max="80" step="1" value="65">
+
+      <div class="input-row"><label>Plan to age</label><span class="value"><span id="v_planAge">95</span></span></div>
+      <input class="slider" type="range" id="planAge" min="70" max="105" step="1" value="95">
+
+      <div class="section-title">Savings &amp; income</div>
+      <div class="input-row"><label>Current savings</label><span class="value">$<span id="v_currentSavings">100,000</span></span></div>
+      <input class="slider" type="range" id="currentSavings" min="0" max="2000000" step="5000" value="100000">
+
+      <div class="input-row"><label>Annual savings (today's $)</label><span class="value">$<span id="v_annualSavings">25,000</span></span></div>
+      <input class="slider" type="range" id="annualSavings" min="0" max="100000" step="500" value="25000">
+
+      <div class="section-title">Retirement spending</div>
+      <div class="input-row"><label>Annual spending (today's $)</label><span class="value">$<span id="v_spending">80,000</span></span></div>
+      <input class="slider" type="range" id="spending" min="20000" max="300000" step="1000" value="80000">
+
+      <div class="input-row"><label>Social Security / pension (today's $/yr)</label><span class="value">$<span id="v_ss">30,000</span></span></div>
+      <input class="slider" type="range" id="ss" min="0" max="100000" step="500" value="30000">
+
+      <div class="input-row"><label>Benefits start at age</label><span class="value"><span id="v_ssAge">67</span></span></div>
+      <input class="slider" type="range" id="ssAge" min="55" max="75" step="1" value="67">
+
+      <div class="section-title">Portfolio mix</div>
+      <div class="input-row"><label>Stocks / Bonds</label><span class="value"><span id="v_stockPct">70</span>% / <span id="v_bondPct">30</span>%</span></div>
+      <input class="slider" type="range" id="stockPct" min="0" max="100" step="5" value="70">
+      <div class="stock-bond-bar">
+        <div class="stock" id="bar_stock" style="width:70%"></div>
+        <div class="bond"  id="bar_bond"  style="width:30%"></div>
+      </div>
+
+      <div class="input-row"><label>Stock return (nominal)</label><span class="value"><span id="v_stockRet">8.0</span>%</span></div>
+      <input class="slider" type="range" id="stockRet" min="0" max="15" step="0.1" value="8">
+
+      <div class="input-row"><label>Bond return (nominal)</label><span class="value"><span id="v_bondRet">4.0</span>%</span></div>
+      <input class="slider" type="range" id="bondRet" min="0" max="10" step="0.1" value="4">
+
+      <div class="input-row"><label>Inflation</label><span class="value"><span id="v_inflation">3.0</span>%</span></div>
+      <input class="slider" type="range" id="inflation" min="0" max="8" step="0.1" value="3">
+
+      <div class="note">Returns and inflation are long-term annual averages. Real-world returns vary year to year (sequence-of-returns risk).</div>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div id="verdict" class="verdict"></div>
+
+      <div class="results">
+        <div class="stat">
+          <div class="stat-label">Blended portfolio return</div>
+          <div class="stat-value" id="s_blended">–</div>
+          <div class="stat-sub">Real (after inflation): <span id="s_real">–</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Portfolio at retirement</div>
+          <div class="stat-value" id="s_atRetire">–</div>
+          <div class="stat-sub">In today's $: <span id="s_atRetireReal">–</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Nest egg needed</div>
+          <div class="stat-value" id="s_required">–</div>
+          <div class="stat-sub">Today's $ to fund through age <span id="s_planAge2">95</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Surplus / shortfall at retirement</div>
+          <div class="stat-value" id="s_gap">–</div>
+          <div class="stat-sub" id="s_gapNote">in today's $</div>
+        </div>
+        <div class="stat" style="border-color: var(--accent); background: rgba(74,158,255,0.08);">
+          <div class="stat-label">Earliest breakeven retirement age</div>
+          <div class="stat-value" id="s_breakeven">–</div>
+          <div class="stat-sub">
+            <button id="btnApplyBreakeven" style="
+              background: var(--accent); color: white; border: none;
+              padding: 4px 10px; border-radius: 4px; font-size: 11px;
+              cursor: pointer; font-weight: 600; margin-top: 2px;
+            ">Use this age</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+          <div style="font-size:14px;font-weight:600;">Portfolio value over time</div>
+          <div class="legend-row">
+            <span><span class="legend-dot" style="background:var(--accent)"></span>Nominal $</span>
+            <span><span class="legend-dot" style="background:var(--good)"></span>Today's $</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart"></canvas>
+        </div>
+      </div>
+
+      <details>
+        <summary>Year-by-year projection</summary>
+        <div style="max-height:400px;overflow:auto;margin-top:8px;">
+          <table id="projectionTable">
+            <thead>
+              <tr>
+                <th>Age</th>
+                <th>Year</th>
+                <th>Contribution</th>
+                <th>Spending</th>
+                <th>SS/Pension</th>
+                <th>Net withdrawal</th>
+                <th>Portfolio (nominal)</th>
+                <th>Portfolio (today's $)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>How this model works</summary>
+        <div style="padding:8px 0;font-size:13px;color:var(--text-dim);line-height:1.6;">
+          Each year the portfolio earns a <em>blended return</em> based on your stock/bond mix. During working years, contributions are added (and grown with inflation). Starting at retirement, you withdraw the amount needed to cover spending (also inflation-adjusted) minus any Social Security or pension income (which starts at the age you set, and also rises with inflation).
+          <br><br>
+          "Today's dollars" divides nominal balances by cumulative inflation, so you can see what the money is actually worth in today's purchasing power. The "nest egg needed" is the present-value lump sum — in today's dollars — that would just barely fund all net withdrawals from retirement through your plan-to age, discounted at the real return rate. Your actual projected portfolio at retirement (also in today's dollars) should comfortably exceed this number.
+          <br><br>
+          <strong>Limitations:</strong> Uses constant average returns — no sequence-of-returns risk, no taxes, no healthcare shocks, no account for required minimum distributions. Real planning should add a meaningful buffer for all of these. For a US 70/30 portfolio, a withdrawal rate around 3.5–4% of the starting balance is the common rule of thumb.
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt = (n) => {
+  if (!isFinite(n)) return '–';
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return sign + '$' + (abs / 1e9).toFixed(2) + 'B';
+  if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(2) + 'M';
+  if (abs >= 1e3) return sign + '$' + Math.round(abs / 1e3).toLocaleString() + 'K';
+  return sign + '$' + Math.round(abs).toLocaleString();
+};
+const fmtFull = (n) => (n < 0 ? '-' : '') + '$' + Math.round(Math.abs(n)).toLocaleString();
+const num = (id) => parseFloat(document.getElementById(id).value);
+
+const inputs = ['currentAge', 'retireAge', 'planAge', 'currentSavings', 'annualSavings',
+  'spending', 'ss', 'ssAge', 'stockPct', 'stockRet', 'bondRet', 'inflation'];
+
+let chart;
+
+// Pure simulation: returns row array + computed metrics.
+function simulate(p, retireAge) {
+  retireAge = Math.max(p.currentAge + 1, retireAge);
+  const planAge = Math.max(retireAge + 1, p.planAge);
+  const rows = [];
+  let bal = p.currentSavings;
+  let depletedAt = null;
+  const thisYear = new Date().getFullYear();
+
+  for (let age = p.currentAge; age <= planAge; age++) {
+    const offset = age - p.currentAge;
+    const inflationFactor = Math.pow(1 + p.inflation, offset);
+    const isRetired = age >= retireAge;
+    const hasSS = age >= p.ssAge;
+
+    const contribution  = isRetired ? 0 : p.annualSavings * inflationFactor;
+    const spendNominal  = isRetired ? p.spending * inflationFactor : 0;
+    const ssNominal     = (isRetired && hasSS) ? p.ss * inflationFactor : 0;
+    const netWithdrawal = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
+
+    bal = bal * (1 + p.blended) + contribution - netWithdrawal;
+    if (bal < 0 && depletedAt === null) { depletedAt = age; bal = 0; }
+
+    rows.push({
+      age,
+      year: thisYear + offset,
+      contribution, spendNominal, ssNominal, netWithdrawal,
+      balNominal: bal,
+      balReal: bal / inflationFactor,
+      isRetireYear: age === retireAge,
+    });
+  }
+
+  const retireRow = rows.find(r => r.age === retireAge);
+  const portfolioAtRetire     = retireRow ? retireRow.balNominal : 0;
+  const portfolioAtRetireReal = retireRow ? retireRow.balReal    : 0;
+
+  // Required nest egg: PV at retirement of all future net withdrawals, discounted at real return.
+  // Result is in today's dollars.
+  let required = 0;
+  for (let age = retireAge; age <= planAge; age++) {
+    const ssThisYear = age >= p.ssAge ? p.ss : 0;
+    const netReal = Math.max(0, p.spending - ssThisYear);
+    const k = age - retireAge + 1;
+    required += netReal / Math.pow(1 + p.realReturn, k);
+  }
+
+  const gapReal = portfolioAtRetireReal - required;
+
+  return {
+    retireAge, planAge, rows, depletedAt,
+    portfolioAtRetire, portfolioAtRetireReal,
+    required, gapReal,
+  };
+}
+
+// Earliest retirement age where surplus >= 0 and portfolio is never depleted.
+function findBreakeven(p) {
+  const minR = p.currentAge + 1;
+  const maxR = Math.min(p.planAge - 1, p.currentAge + 60);
+  for (let R = minR; R <= maxR; R++) {
+    const s = simulate(p, R);
+    if (s.gapReal >= 0 && s.depletedAt === null) return R;
+  }
+  return null;
+}
+
+function project() {
+  const p = {
+    currentAge:    num('currentAge'),
+    planAge:       Math.max(num('currentAge') + 2, num('planAge')),
+    currentSavings: num('currentSavings'),
+    annualSavings: num('annualSavings'),
+    spending:      num('spending'),
+    ss:            num('ss'),
+    ssAge:         num('ssAge'),
+    inflation:     num('inflation') / 100,
+  };
+  const stockPct = num('stockPct') / 100;
+  const stockRet = num('stockRet') / 100;
+  const bondRet  = num('bondRet')  / 100;
+  p.blended    = stockPct * stockRet + (1 - stockPct) * bondRet;
+  p.realReturn = (1 + p.blended) / (1 + p.inflation) - 1;
+
+  const retireAge = Math.max(p.currentAge + 1, num('retireAge'));
+  const sim = simulate(p, retireAge);
+  const { planAge, rows, depletedAt,
+          portfolioAtRetire, portfolioAtRetireReal,
+          required, gapReal } = sim;
+
+  // Stat cards
+  document.getElementById('s_blended').textContent     = (p.blended * 100).toFixed(1) + '%';
+  document.getElementById('s_real').textContent         = (p.realReturn * 100).toFixed(1) + '%';
+  document.getElementById('s_atRetire').textContent     = fmt(portfolioAtRetire);
+  document.getElementById('s_atRetireReal').textContent = fmt(portfolioAtRetireReal);
+  document.getElementById('s_required').textContent     = fmt(required);   // today's $
+  document.getElementById('s_planAge2').textContent     = planAge;
+  document.getElementById('s_gap').textContent          = fmt(gapReal);
+  document.getElementById('s_gap').style.color          = gapReal >= 0 ? 'var(--good)' : 'var(--bad)';
+  document.getElementById('s_gapNote').textContent      = (gapReal >= 0 ? 'surplus' : 'shortfall') + " in today's $";
+
+  // Breakeven
+  const breakeven    = findBreakeven(p);
+  const breakevenEl  = document.getElementById('s_breakeven');
+  const btn          = document.getElementById('btnApplyBreakeven');
+  if (breakeven === null) {
+    breakevenEl.textContent    = '—';
+    breakevenEl.style.color    = 'var(--bad)';
+    btn.disabled               = true;
+    btn.style.opacity          = '0.4';
+    btn.style.cursor           = 'not-allowed';
+  } else {
+    breakevenEl.textContent    = breakeven;
+    breakevenEl.style.color    = breakeven <= retireAge ? 'var(--good)' : 'var(--warn)';
+    btn.disabled               = false;
+    btn.style.opacity          = '1';
+    btn.style.cursor           = 'pointer';
+    btn.dataset.value          = breakeven;
+  }
+
+  // Verdict
+  const verdict = document.getElementById('verdict');
+  if (depletedAt !== null) {
+    const shortfall = planAge - depletedAt;
+    verdict.className = 'verdict bad';
+    verdict.innerHTML = `<strong>Savings run out at age ${depletedAt}</strong>` +
+      `That's ${shortfall} year${shortfall === 1 ? '' : 's'} short of your plan-to age (${planAge}). ` +
+      `Try saving more, spending less, retiring later, or increasing your stock allocation.`;
+  } else if (gapReal < 0) {
+    verdict.className = 'verdict warn';
+    verdict.innerHTML = `<strong>On the edge</strong>` +
+      `Your money lasts through age ${planAge}, but the cushion is thin. ` +
+      `Required nest egg: ${fmtFull(required)} (today's $) — you're projected to have ${fmtFull(portfolioAtRetireReal)} (today's $) at retirement.`;
+  } else {
+    const finalBal = rows[rows.length - 1].balReal;
+    verdict.className = 'verdict';
+    verdict.innerHTML = `<strong>On track &#10003; Savings cover plan</strong>` +
+      `Surplus of ${fmtFull(gapReal)} (today's $) above the required nest egg. ` +
+      `Portfolio ends at age ${planAge} with ${fmtFull(finalBal)} remaining (today's $).`;
+  }
+
+  // Chart
+  const labels  = rows.map(r => r.age);
+  const nomData = rows.map(r => r.balNominal);
+  const realData = rows.map(r => r.balReal);
+
+  if (chart) {
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = nomData;
+    chart.data.datasets[1].data = realData;
+    chart.options.plugins.annotation = buildAnnotation(retireAge);
+    chart.update('none');
+  } else {
+    const ctx = document.getElementById('chart').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Nominal $',  data: nomData,  borderColor: '#4a9eff', backgroundColor: 'rgba(74,158,255,0.12)', fill: true, tension: 0.2, pointRadius: 0, borderWidth: 2 },
+          { label: "Today's $",  data: realData, borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.08)', fill: true, tension: 0.2, pointRadius: 0, borderWidth: 2 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => 'Age ' + items[0].label,
+              label: (item) => item.dataset.label + ': ' + fmtFull(item.parsed.y),
+            },
+          },
+          annotation: buildAnnotation(retireAge),
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Age', color: '#8b95a3' },
+            grid:  { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#8b95a3' },
+          },
+          y: {
+            title: { display: true, text: 'Portfolio value', color: '#8b95a3' },
+            grid:  { color: 'rgba(255,255,255,0.06)' },
+            ticks: { color: '#8b95a3', callback: (v) => fmt(v) },
+          },
+        },
+      },
+    });
+  }
+
+  // Table
+  const tbody = document.querySelector('#projectionTable tbody');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    if (r.isRetireYear) tr.className = 'retire-row';
+    tr.innerHTML =
+      `<td>${r.age}</td>` +
+      `<td>${r.year}</td>` +
+      `<td>${r.contribution  > 0 ? fmtFull(r.contribution)  : '–'}</td>` +
+      `<td>${r.spendNominal  > 0 ? fmtFull(r.spendNominal)  : '–'}</td>` +
+      `<td>${r.ssNominal     > 0 ? fmtFull(r.ssNominal)     : '–'}</td>` +
+      `<td>${r.netWithdrawal > 0 ? fmtFull(r.netWithdrawal) : '–'}</td>` +
+      `<td>${fmtFull(r.balNominal)}</td>` +
+      `<td>${fmtFull(r.balReal)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function buildAnnotation(retireAge) {
+  return {
+    annotations: {
+      retireLine: {
+        type: 'line',
+        scaleID: 'x',
+        value: retireAge,
+        borderColor: 'rgba(74,158,255,0.4)',
+        borderWidth: 1,
+        borderDash: [4, 4],
+      },
+      retireLabel: {
+        type: 'label',
+        scaleID: 'x',
+        value: retireAge,
+        content: 'Retirement',
+        color: '#8b95a3',
+        font: { size: 11 },
+        position: 'start',
+        yAdjust: -10,
+      },
+    },
+  };
+}
+
+function syncLabels() {
+  document.getElementById('v_currentAge').textContent   = num('currentAge');
+  document.getElementById('v_retireAge').textContent    = num('retireAge');
+  document.getElementById('v_planAge').textContent      = num('planAge');
+  document.getElementById('v_currentSavings').textContent = num('currentSavings').toLocaleString();
+  document.getElementById('v_annualSavings').textContent  = num('annualSavings').toLocaleString();
+  document.getElementById('v_spending').textContent     = num('spending').toLocaleString();
+  document.getElementById('v_ss').textContent           = num('ss').toLocaleString();
+  document.getElementById('v_ssAge').textContent        = num('ssAge');
+  const sp = num('stockPct');
+  document.getElementById('v_stockPct').textContent = sp;
+  document.getElementById('v_bondPct').textContent  = 100 - sp;
+  document.getElementById('bar_stock').style.width  = sp + '%';
+  document.getElementById('bar_bond').style.width   = (100 - sp) + '%';
+  document.getElementById('v_stockRet').textContent  = num('stockRet').toFixed(1);
+  document.getElementById('v_bondRet').textContent   = num('bondRet').toFixed(1);
+  document.getElementById('v_inflation').textContent = num('inflation').toFixed(1);
+}
+
+inputs.forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    syncLabels();
+    project();
+  });
+});
+
+document.getElementById('btnApplyBreakeven').addEventListener('click', (e) => {
+  const v = e.target.dataset.value;
+  if (!v) return;
+  const slider = document.getElementById('retireAge');
+  const target = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), parseInt(v)));
+  slider.value = target;
+  syncLabels();
+  project();
+});
+
+syncLabels();
+project();
+</script>
+</body>
+</html>
