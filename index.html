@@ -72,6 +72,9 @@
     min-width: 90px;
     text-align: right;
     font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
   }
   .slider {
     width: 100%;
@@ -101,6 +104,24 @@
     cursor: pointer;
     border: 2px solid var(--bg);
   }
+  .num-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    font-family: inherit;
+    text-align: right;
+    width: 80px;
+    outline: none;
+    padding: 1px 0;
+    -moz-appearance: textfield;
+  }
+  .num-input:hover, .num-input:focus { border-bottom-color: var(--accent); }
+  .num-input::-webkit-outer-spin-button,
+  .num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .results {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -120,11 +141,7 @@
     letter-spacing: 0.5px;
     margin-bottom: 4px;
   }
-  .stat-value {
-    font-size: 22px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
+  .stat-value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .stat-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
   .verdict {
     padding: 16px 20px;
@@ -134,7 +151,7 @@
     border-left: 4px solid var(--good);
     background: rgba(74, 222, 128, 0.08);
   }
-  .verdict.bad { border-color: var(--bad); background: rgba(248, 113, 113, 0.08); }
+  .verdict.bad  { border-color: var(--bad);  background: rgba(248, 113, 113, 0.08); }
   .verdict.warn { border-color: var(--warn); background: rgba(251, 191, 36, 0.08); }
   .verdict strong { display: block; margin-bottom: 4px; font-size: 16px; }
   .chart-wrap {
@@ -193,47 +210,87 @@
     <!-- INPUTS -->
     <div class="panel">
       <div class="section-title">About you</div>
-      <div class="input-row"><label>Current age</label><span class="value"><span id="v_currentAge">35</span></span></div>
+
+      <div class="input-row">
+        <label>Current age</label>
+        <span class="value"><input type="number" class="num-input" id="ni_currentAge" min="20" max="70" step="1" value="35"></span>
+      </div>
       <input class="slider" type="range" id="currentAge" min="20" max="70" step="1" value="35">
 
-      <div class="input-row"><label>Retirement age</label><span class="value"><span id="v_retireAge">65</span></span></div>
+      <div class="input-row">
+        <label>Retirement age</label>
+        <span class="value"><input type="number" class="num-input" id="ni_retireAge" min="40" max="80" step="1" value="65"></span>
+      </div>
       <input class="slider" type="range" id="retireAge" min="40" max="80" step="1" value="65">
 
-      <div class="input-row"><label>Plan to age</label><span class="value"><span id="v_planAge">95</span></span></div>
+      <div class="input-row">
+        <label>Plan to age</label>
+        <span class="value"><input type="number" class="num-input" id="ni_planAge" min="70" max="105" step="1" value="95"></span>
+      </div>
       <input class="slider" type="range" id="planAge" min="70" max="105" step="1" value="95">
 
       <div class="section-title">Savings &amp; income</div>
-      <div class="input-row"><label>Current savings</label><span class="value">$<span id="v_currentSavings">100,000</span></span></div>
-      <input class="slider" type="range" id="currentSavings" min="0" max="2000000" step="5000" value="100000">
 
-      <div class="input-row"><label>Annual savings (today's $)</label><span class="value">$<span id="v_annualSavings">25,000</span></span></div>
-      <input class="slider" type="range" id="annualSavings" min="0" max="100000" step="500" value="25000">
+      <div class="input-row">
+        <label>Current savings</label>
+        <span class="value">$<input type="number" class="num-input" id="ni_currentSavings" min="0" step="10000" value="100000"></span>
+      </div>
+      <input class="slider" type="range" id="currentSavings" min="0" max="10000000" step="10000" value="100000">
+
+      <div class="input-row">
+        <label>Annual savings (today's $)</label>
+        <span class="value">$<input type="number" class="num-input" id="ni_annualSavings" min="0" step="1000" value="25000"></span>
+      </div>
+      <input class="slider" type="range" id="annualSavings" min="0" max="500000" step="1000" value="25000">
 
       <div class="section-title">Retirement spending</div>
-      <div class="input-row"><label>Annual spending (today's $)</label><span class="value">$<span id="v_spending">80,000</span></span></div>
-      <input class="slider" type="range" id="spending" min="20000" max="300000" step="1000" value="80000">
 
-      <div class="input-row"><label>Social Security / pension (today's $/yr)</label><span class="value">$<span id="v_ss">30,000</span></span></div>
+      <div class="input-row">
+        <label>Annual spending (today's $)</label>
+        <span class="value">$<input type="number" class="num-input" id="ni_spending" min="0" step="1000" value="80000"></span>
+      </div>
+      <input class="slider" type="range" id="spending" min="0" max="1000000" step="1000" value="80000">
+
+      <div class="input-row">
+        <label>Social Security / pension (today's $/yr)</label>
+        <span class="value">$<input type="number" class="num-input" id="ni_ss" min="0" step="500" value="30000"></span>
+      </div>
       <input class="slider" type="range" id="ss" min="0" max="100000" step="500" value="30000">
 
-      <div class="input-row"><label>Benefits start at age</label><span class="value"><span id="v_ssAge">67</span></span></div>
+      <div class="input-row">
+        <label>Benefits start at age</label>
+        <span class="value"><input type="number" class="num-input" id="ni_ssAge" min="55" max="75" step="1" value="67"></span>
+      </div>
       <input class="slider" type="range" id="ssAge" min="55" max="75" step="1" value="67">
 
       <div class="section-title">Portfolio mix</div>
-      <div class="input-row"><label>Stocks / Bonds</label><span class="value"><span id="v_stockPct">70</span>% / <span id="v_bondPct">30</span>%</span></div>
+
+      <div class="input-row">
+        <label>Stocks / Bonds</label>
+        <span class="value"><input type="number" class="num-input" id="ni_stockPct" min="0" max="100" step="5" value="70">% / <span id="v_bondPct">30</span>%</span>
+      </div>
       <input class="slider" type="range" id="stockPct" min="0" max="100" step="5" value="70">
       <div class="stock-bond-bar">
         <div class="stock" id="bar_stock" style="width:70%"></div>
         <div class="bond"  id="bar_bond"  style="width:30%"></div>
       </div>
 
-      <div class="input-row"><label>Stock return (nominal)</label><span class="value"><span id="v_stockRet">8.0</span>%</span></div>
+      <div class="input-row">
+        <label>Stock return (nominal)</label>
+        <span class="value"><input type="number" class="num-input" id="ni_stockRet" min="0" max="30" step="0.1" value="8">%</span>
+      </div>
       <input class="slider" type="range" id="stockRet" min="0" max="15" step="0.1" value="8">
 
-      <div class="input-row"><label>Bond return (nominal)</label><span class="value"><span id="v_bondRet">4.0</span>%</span></div>
+      <div class="input-row">
+        <label>Bond return (nominal)</label>
+        <span class="value"><input type="number" class="num-input" id="ni_bondRet" min="0" max="20" step="0.1" value="4">%</span>
+      </div>
       <input class="slider" type="range" id="bondRet" min="0" max="10" step="0.1" value="4">
 
-      <div class="input-row"><label>Inflation</label><span class="value"><span id="v_inflation">3.0</span>%</span></div>
+      <div class="input-row">
+        <label>Inflation</label>
+        <span class="value"><input type="number" class="num-input" id="ni_inflation" min="0" max="20" step="0.1" value="3">%</span>
+      </div>
       <input class="slider" type="range" id="inflation" min="0" max="8" step="0.1" value="3">
 
       <div class="note">Returns and inflation are long-term annual averages. Real-world returns vary year to year (sequence-of-returns risk).</div>
@@ -336,14 +393,19 @@ const fmt = (n) => {
   return sign + '$' + Math.round(abs).toLocaleString();
 };
 const fmtFull = (n) => (n < 0 ? '-' : '') + '$' + Math.round(Math.abs(n)).toLocaleString();
-const num = (id) => parseFloat(document.getElementById(id).value);
 
 const inputs = ['currentAge', 'retireAge', 'planAge', 'currentSavings', 'annualSavings',
   'spending', 'ss', 'ssAge', 'stockPct', 'stockRet', 'bondRet', 'inflation'];
 
+// Number inputs are the source of truth; sliders are visual affordances clamped to their range.
+const num = (id) => {
+  const ni = document.getElementById('ni_' + id);
+  if (ni) { const v = parseFloat(ni.value); return isNaN(v) ? 0 : v; }
+  return parseFloat(document.getElementById(id).value);
+};
+
 let chart;
 
-// Pure simulation: returns row array + computed metrics.
 function simulate(p, retireAge) {
   retireAge = Math.max(p.currentAge + 1, retireAge);
   const planAge = Math.max(retireAge + 1, p.planAge);
@@ -367,8 +429,7 @@ function simulate(p, retireAge) {
     if (bal < 0 && depletedAt === null) { depletedAt = age; bal = 0; }
 
     rows.push({
-      age,
-      year: thisYear + offset,
+      age, year: thisYear + offset,
       contribution, spendNominal, ssNominal, netWithdrawal,
       balNominal: bal,
       balReal: bal / inflationFactor,
@@ -380,8 +441,6 @@ function simulate(p, retireAge) {
   const portfolioAtRetire     = retireRow ? retireRow.balNominal : 0;
   const portfolioAtRetireReal = retireRow ? retireRow.balReal    : 0;
 
-  // Required nest egg: PV at retirement of all future net withdrawals, discounted at real return.
-  // Result is in today's dollars.
   let required = 0;
   for (let age = retireAge; age <= planAge; age++) {
     const ssThisYear = age >= p.ssAge ? p.ss : 0;
@@ -392,14 +451,10 @@ function simulate(p, retireAge) {
 
   const gapReal = portfolioAtRetireReal - required;
 
-  return {
-    retireAge, planAge, rows, depletedAt,
-    portfolioAtRetire, portfolioAtRetireReal,
-    required, gapReal,
-  };
+  return { retireAge, planAge, rows, depletedAt,
+           portfolioAtRetire, portfolioAtRetireReal, required, gapReal };
 }
 
-// Earliest retirement age where surplus >= 0 and portfolio is never depleted.
 function findBreakeven(p) {
   const minR = p.currentAge + 1;
   const maxR = Math.min(p.planAge - 1, p.currentAge + 60);
@@ -430,40 +485,32 @@ function project() {
   const retireAge = Math.max(p.currentAge + 1, num('retireAge'));
   const sim = simulate(p, retireAge);
   const { planAge, rows, depletedAt,
-          portfolioAtRetire, portfolioAtRetireReal,
-          required, gapReal } = sim;
+          portfolioAtRetire, portfolioAtRetireReal, required, gapReal } = sim;
 
-  // Stat cards
   document.getElementById('s_blended').textContent     = (p.blended * 100).toFixed(1) + '%';
   document.getElementById('s_real').textContent         = (p.realReturn * 100).toFixed(1) + '%';
   document.getElementById('s_atRetire').textContent     = fmt(portfolioAtRetire);
   document.getElementById('s_atRetireReal').textContent = fmt(portfolioAtRetireReal);
-  document.getElementById('s_required').textContent     = fmt(required);   // today's $
+  document.getElementById('s_required').textContent     = fmt(required);
   document.getElementById('s_planAge2').textContent     = planAge;
   document.getElementById('s_gap').textContent          = fmt(gapReal);
   document.getElementById('s_gap').style.color          = gapReal >= 0 ? 'var(--good)' : 'var(--bad)';
   document.getElementById('s_gapNote').textContent      = (gapReal >= 0 ? 'surplus' : 'shortfall') + " in today's $";
 
-  // Breakeven
-  const breakeven    = findBreakeven(p);
-  const breakevenEl  = document.getElementById('s_breakeven');
-  const btn          = document.getElementById('btnApplyBreakeven');
+  const breakeven   = findBreakeven(p);
+  const breakevenEl = document.getElementById('s_breakeven');
+  const btn         = document.getElementById('btnApplyBreakeven');
   if (breakeven === null) {
-    breakevenEl.textContent    = '—';
-    breakevenEl.style.color    = 'var(--bad)';
-    btn.disabled               = true;
-    btn.style.opacity          = '0.4';
-    btn.style.cursor           = 'not-allowed';
+    breakevenEl.textContent = '—';
+    breakevenEl.style.color = 'var(--bad)';
+    btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
   } else {
-    breakevenEl.textContent    = breakeven;
-    breakevenEl.style.color    = breakeven <= retireAge ? 'var(--good)' : 'var(--warn)';
-    btn.disabled               = false;
-    btn.style.opacity          = '1';
-    btn.style.cursor           = 'pointer';
-    btn.dataset.value          = breakeven;
+    breakevenEl.textContent = breakeven;
+    breakevenEl.style.color = breakeven <= retireAge ? 'var(--good)' : 'var(--warn)';
+    btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+    btn.dataset.value = breakeven;
   }
 
-  // Verdict
   const verdict = document.getElementById('verdict');
   if (depletedAt !== null) {
     const shortfall = planAge - depletedAt;
@@ -475,7 +522,7 @@ function project() {
     verdict.className = 'verdict warn';
     verdict.innerHTML = `<strong>On the edge</strong>` +
       `Your money lasts through age ${planAge}, but the cushion is thin. ` +
-      `Required nest egg: ${fmtFull(required)} (today's $) — you're projected to have ${fmtFull(portfolioAtRetireReal)} (today's $) at retirement.`;
+      `Required: ${fmtFull(required)} — projected: ${fmtFull(portfolioAtRetireReal)} (today's $).`;
   } else {
     const finalBal = rows[rows.length - 1].balReal;
     verdict.className = 'verdict';
@@ -484,11 +531,9 @@ function project() {
       `Portfolio ends at age ${planAge} with ${fmtFull(finalBal)} remaining (today's $).`;
   }
 
-  // Chart
-  const labels  = rows.map(r => r.age);
-  const nomData = rows.map(r => r.balNominal);
+  const labels   = rows.map(r => r.age);
+  const nomData  = rows.map(r => r.balNominal);
   const realData = rows.map(r => r.balReal);
-
   if (chart) {
     chart.data.labels = labels;
     chart.data.datasets[0].data = nomData;
@@ -515,42 +560,31 @@ function project() {
           tooltip: {
             callbacks: {
               title: (items) => 'Age ' + items[0].label,
-              label: (item) => item.dataset.label + ': ' + fmtFull(item.parsed.y),
+              label: (item)  => item.dataset.label + ': ' + fmtFull(item.parsed.y),
             },
           },
           annotation: buildAnnotation(retireAge),
         },
         scales: {
-          x: {
-            title: { display: true, text: 'Age', color: '#8b95a3' },
-            grid:  { color: 'rgba(255,255,255,0.04)' },
-            ticks: { color: '#8b95a3' },
-          },
-          y: {
-            title: { display: true, text: 'Portfolio value', color: '#8b95a3' },
-            grid:  { color: 'rgba(255,255,255,0.06)' },
-            ticks: { color: '#8b95a3', callback: (v) => fmt(v) },
-          },
+          x: { title: { display: true, text: 'Age', color: '#8b95a3' }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b95a3' } },
+          y: { title: { display: true, text: 'Portfolio value', color: '#8b95a3' }, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#8b95a3', callback: (v) => fmt(v) } },
         },
       },
     });
   }
 
-  // Table
   const tbody = document.querySelector('#projectionTable tbody');
   tbody.innerHTML = '';
   rows.forEach(r => {
     const tr = document.createElement('tr');
     if (r.isRetireYear) tr.className = 'retire-row';
     tr.innerHTML =
-      `<td>${r.age}</td>` +
-      `<td>${r.year}</td>` +
+      `<td>${r.age}</td><td>${r.year}</td>` +
       `<td>${r.contribution  > 0 ? fmtFull(r.contribution)  : '–'}</td>` +
       `<td>${r.spendNominal  > 0 ? fmtFull(r.spendNominal)  : '–'}</td>` +
       `<td>${r.ssNominal     > 0 ? fmtFull(r.ssNominal)     : '–'}</td>` +
       `<td>${r.netWithdrawal > 0 ? fmtFull(r.netWithdrawal) : '–'}</td>` +
-      `<td>${fmtFull(r.balNominal)}</td>` +
-      `<td>${fmtFull(r.balReal)}</td>`;
+      `<td>${fmtFull(r.balNominal)}</td><td>${fmtFull(r.balReal)}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -558,50 +592,43 @@ function project() {
 function buildAnnotation(retireAge) {
   return {
     annotations: {
-      retireLine: {
-        type: 'line',
-        scaleID: 'x',
-        value: retireAge,
-        borderColor: 'rgba(74,158,255,0.4)',
-        borderWidth: 1,
-        borderDash: [4, 4],
-      },
-      retireLabel: {
-        type: 'label',
-        scaleID: 'x',
-        value: retireAge,
-        content: 'Retirement',
-        color: '#8b95a3',
-        font: { size: 11 },
-        position: 'start',
-        yAdjust: -10,
-      },
+      retireLine: { type: 'line', scaleID: 'x', value: retireAge, borderColor: 'rgba(74,158,255,0.4)', borderWidth: 1, borderDash: [4, 4] },
+      retireLabel: { type: 'label', scaleID: 'x', value: retireAge, content: 'Retirement', color: '#8b95a3', font: { size: 11 }, position: 'start', yAdjust: -10 },
     },
   };
 }
 
-function syncLabels() {
-  document.getElementById('v_currentAge').textContent   = num('currentAge');
-  document.getElementById('v_retireAge').textContent    = num('retireAge');
-  document.getElementById('v_planAge').textContent      = num('planAge');
-  document.getElementById('v_currentSavings').textContent = num('currentSavings').toLocaleString();
-  document.getElementById('v_annualSavings').textContent  = num('annualSavings').toLocaleString();
-  document.getElementById('v_spending').textContent     = num('spending').toLocaleString();
-  document.getElementById('v_ss').textContent           = num('ss').toLocaleString();
-  document.getElementById('v_ssAge').textContent        = num('ssAge');
-  const sp = num('stockPct');
-  document.getElementById('v_stockPct').textContent = sp;
-  document.getElementById('v_bondPct').textContent  = 100 - sp;
-  document.getElementById('bar_stock').style.width  = sp + '%';
-  document.getElementById('bar_bond').style.width   = (100 - sp) + '%';
-  document.getElementById('v_stockRet').textContent  = num('stockRet').toFixed(1);
-  document.getElementById('v_bondRet').textContent   = num('bondRet').toFixed(1);
-  document.getElementById('v_inflation').textContent = num('inflation').toFixed(1);
+// Sync slider position from number input value (clamped to slider range).
+function syncSlider(id) {
+  const slider = document.getElementById(id);
+  const val = num(id);
+  slider.value = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), val));
+  if (id === 'stockPct') {
+    const sp = Math.max(0, Math.min(100, val));
+    document.getElementById('v_bondPct').textContent = Math.round(100 - sp);
+    document.getElementById('bar_stock').style.width = sp + '%';
+    document.getElementById('bar_bond').style.width  = (100 - sp) + '%';
+  }
+}
+
+// Sync number input from slider value (called after slider drag).
+function syncNumInput(id) {
+  const slider = document.getElementById(id);
+  const ni = document.getElementById('ni_' + id);
+  if (!ni) return;
+  const isDecimal = ['stockRet', 'bondRet', 'inflation'].includes(id);
+  ni.value = isDecimal ? parseFloat(slider.value).toFixed(1) : slider.value;
+  if (id === 'stockPct') {
+    const sp = parseFloat(slider.value);
+    document.getElementById('v_bondPct').textContent = 100 - sp;
+    document.getElementById('bar_stock').style.width = sp + '%';
+    document.getElementById('bar_bond').style.width  = (100 - sp) + '%';
+  }
 }
 
 function saveInputs() {
   const saved = {};
-  inputs.forEach(id => { saved[id] = document.getElementById(id).value; });
+  inputs.forEach(id => { saved[id] = num(id); });
   localStorage.setItem('retirementCalc', JSON.stringify(saved));
 }
 
@@ -610,14 +637,29 @@ function loadInputs() {
     const saved = JSON.parse(localStorage.getItem('retirementCalc'));
     if (!saved) return;
     inputs.forEach(id => {
-      if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+      if (saved[id] === undefined) return;
+      const ni = document.getElementById('ni_' + id);
+      if (ni) ni.value = saved[id];
+      syncSlider(id);
     });
   } catch (e) {}
 }
 
+// Slider drag → update number input → recalculate.
 inputs.forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
-    syncLabels();
+    syncNumInput(id);
+    project();
+    saveInputs();
+  });
+});
+
+// Number input change → update slider → recalculate.
+inputs.forEach(id => {
+  const ni = document.getElementById('ni_' + id);
+  if (!ni) return;
+  ni.addEventListener('input', () => {
+    syncSlider(id);
     project();
     saveInputs();
   });
@@ -627,15 +669,15 @@ document.getElementById('btnApplyBreakeven').addEventListener('click', (e) => {
   const v = e.target.dataset.value;
   if (!v) return;
   const slider = document.getElementById('retireAge');
+  const ni = document.getElementById('ni_retireAge');
   const target = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), parseInt(v)));
   slider.value = target;
-  syncLabels();
+  if (ni) ni.value = target;
   project();
   saveInputs();
 });
 
 loadInputs();
-syncLabels();
 project();
 </script>
 </body>
