@@ -348,6 +348,7 @@
                 <th>Spending</th>
                 <th>SS/Pension</th>
                 <th>Net withdrawal</th>
+                <th>Net impact</th>
                 <th>Portfolio (nominal)</th>
                 <th>Portfolio (today's $)</th>
               </tr>
@@ -447,6 +448,7 @@ function simulate(p, retireAge) {
     rows.push({
       age, year: thisYear + offset,
       contribution, returns, spendNominal, ssNominal, netWithdrawal,
+      netImpact: returns + contribution - netWithdrawal,
       balNominal: bal,
       balReal: bal / inflFactor,
       isRetireYear: age === retireAge,
@@ -688,6 +690,7 @@ function project() {
       `<td>${r.spendNominal  > 0 ? fmtFull(r.spendNominal)  : '–'}</td>` +
       `<td>${r.ssNominal     > 0 ? fmtFull(r.ssNominal)     : '–'}</td>` +
       `<td>${r.netWithdrawal > 0 ? fmtFull(r.netWithdrawal) : '–'}</td>` +
+      `<td style="color:${r.netImpact >= 0 ? '#4ade80' : '#f87171'}">${fmtFull(r.netImpact)}</td>` +
       `<td>${fmtFull(r.balNominal)}</td><td>${fmtFull(r.balReal)}</td>`;
     tbody.appendChild(tr);
   });
