@@ -599,10 +599,27 @@ function syncLabels() {
   document.getElementById('v_inflation').textContent = num('inflation').toFixed(1);
 }
 
+function saveInputs() {
+  const saved = {};
+  inputs.forEach(id => { saved[id] = document.getElementById(id).value; });
+  localStorage.setItem('retirementCalc', JSON.stringify(saved));
+}
+
+function loadInputs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('retirementCalc'));
+    if (!saved) return;
+    inputs.forEach(id => {
+      if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+    });
+  } catch (e) {}
+}
+
 inputs.forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
     syncLabels();
     project();
+    saveInputs();
   });
 });
 
@@ -614,8 +631,10 @@ document.getElementById('btnApplyBreakeven').addEventListener('click', (e) => {
   slider.value = target;
   syncLabels();
   project();
+  saveInputs();
 });
 
+loadInputs();
 syncLabels();
 project();
 </script>
