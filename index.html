@@ -333,7 +333,8 @@
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
           <div style="font-size:14px;font-weight:600;">Portfolio value over time</div>
           <div class="legend-row">
-            <span><span class="legend-band" style="background:rgba(74,222,128,0.3)"></span>MC P25–P75 range</span>
+            <span><span class="legend-band" style="background:rgba(74,222,128,0.12)"></span>MC P5–P95</span>
+            <span><span class="legend-band" style="background:rgba(74,222,128,0.28)"></span>MC P25–P75 (core)</span>
             <span><span class="legend-dot" style="background:var(--accent)"></span>Constant returns (today's $)</span>
           </div>
         </div>
@@ -521,7 +522,9 @@ function runMonteCarlo(p, retireAge, N = 1000) {
   };
 
   const realPct = realByAge.map(vals => ({
-    p10: pct(vals, 0.10), p25: pct(vals, 0.25), p50: pct(vals, 0.50), p75: pct(vals, 0.75),
+    p5:  pct(vals, 0.05), p10: pct(vals, 0.10),
+    p25: pct(vals, 0.25), p50: pct(vals, 0.50),
+    p75: pct(vals, 0.75), p90: pct(vals, 0.90), p95: pct(vals, 0.95),
   }));
 
   return { successRate: successCount / N, realPct };
@@ -628,17 +631,27 @@ function project() {
   srEl.textContent  = successPct.toFixed(1) + '%';
   srEl.style.color  = successPct >= 90 ? 'var(--good)' : successPct >= 70 ? 'var(--warn)' : 'var(--bad)';
 
-  // Chart — today's $: deterministic line + MC P25–P75 band.
-  const labels    = rows.map(r => r.age);
-  const detData   = rows.map(r => r.balReal);
-  const p75Data   = mc.realPct.map(v => v.p75);
-  const p25Data   = mc.realPct.map(v => v.p25);
+  // Chart — today's $: deterministic line + MC percentile bands.
+  // Dataset order: P95, P90, P75, P25, P10, P5, Deterministic.
+  // Each fills to the next (+1), creating concentric bands darkening toward the core.
+  const labels  = rows.map(r => r.age);
+  const detData = rows.map(r => r.balReal);
+  const p95Data = mc.realPct.map(v => v.p95);
+  const p90Data = mc.realPct.map(v => v.p90);
+  const p75Data = mc.realPct.map(v => v.p75);
+  const p25Data = mc.realPct.map(v => v.p25);
+  const p10Data = mc.realPct.map(v => v.p10);
+  const p5Data  = mc.realPct.map(v => v.p5);
 
   if (chart) {
-    chart.data.labels            = labels;
-    chart.data.datasets[0].data = p75Data;
-    chart.data.datasets[1].data = p25Data;
-    chart.data.datasets[2].data = detData;
+    chart.data.labels             = labels;
+    chart.data.datasets[0].data  = p95Data;
+    chart.data.datasets[1].data  = p90Data;
+    chart.data.datasets[2].data  = p75Data;
+    chart.data.datasets[3].data  = p25Data;
+    chart.data.datasets[4].data  = p10Data;
+    chart.data.datasets[5].data  = p5Data;
+    chart.data.datasets[6].data  = detData;
     chart.options.plugins.annotation = buildAnnotation(retireAge);
     chart.update('none');
   } else {
@@ -648,13 +661,18 @@ function project() {
       data: {
         labels,
         datasets: [
-          // P75 upper bound — fills down to P25 (next dataset).
+          { label: 'P95', data: p95Data, borderWidth: 0, pointRadius: 0,
+            fill: '+1', backgroundColor: 'rgba(74,222,128,0.06)', tension: 0.2 },
+          { label: 'P90', data: p90Data, borderWidth: 0, pointRadius: 0,
+            fill: '+1', backgroundColor: 'rgba(74,222,128,0.10)', tension: 0.2 },
           { label: 'P75', data: p75Data, borderWidth: 0, pointRadius: 0,
-            fill: '+1', backgroundColor: 'rgba(74,222,128,0.2)', tension: 0.2 },
-          // P25 lower bound.
+            fill: '+1', backgroundColor: 'rgba(74,222,128,0.18)', tension: 0.2 },
           { label: 'P25', data: p25Data, borderWidth: 0, pointRadius: 0,
+            fill: '+1', backgroundColor: 'rgba(74,222,128,0.10)', tension: 0.2 },
+          { label: 'P10', data: p10Data, borderWidth: 0, pointRadius: 0,
+            fill: '+1', backgroundColor: 'rgba(74,222,128,0.06)', tension: 0.2 },
+          { label: 'P5',  data: p5Data,  borderWidth: 0, pointRadius: 0,
             fill: false, tension: 0.2 },
-          // Deterministic (constant returns) line.
           { label: "Constant returns (today's $)", data: detData,
             borderColor: '#4a9eff', backgroundColor: 'transparent',
             borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.2 },
@@ -670,10 +688,13 @@ function project() {
             callbacks: {
               title: (items) => 'Age ' + items[0].label,
               label: (item)  => {
-                const lbls = ['MC 75th pct', 'MC 25th pct', 'Constant returns'];
-                return lbls[item.datasetIndex] + " (today's $): " + fmtFull(item.parsed.y);
+                const lbls = ['P95', null, 'P75', 'P25', null, 'P5', 'Constant returns'];
+                const lbl = lbls[item.datasetIndex];
+                if (!lbl) return null;
+                return lbl + " (today's $): " + fmtFull(item.parsed.y);
               },
             },
+            filter: (item) => [0, 2, 3, 5, 6].includes(item.datasetIndex),
           },
           annotation: buildAnnotation(retireAge),
         },
