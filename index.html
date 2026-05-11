@@ -325,9 +325,8 @@
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
           <div style="font-size:14px;font-weight:600;">Portfolio value over time</div>
           <div class="legend-row">
-            <span><span class="legend-band" style="background:rgba(74,158,255,0.25)"></span>P10–P90 range</span>
-            <span><span class="legend-dot" style="background:var(--accent)"></span>Median (nominal)</span>
-            <span><span class="legend-dot" style="background:var(--good)"></span>Median (today's $)</span>
+            <span><span class="legend-band" style="background:rgba(74,222,128,0.3)"></span>P25–P75 range</span>
+            <span><span class="legend-dot" style="background:var(--good)"></span>Median — all in today's $</span>
           </div>
         </div>
         <div class="chart-wrap">
@@ -362,7 +361,7 @@
         <div style="padding:8px 0;font-size:13px;color:var(--text-dim);line-height:1.6;">
           Each year the portfolio earns a <em>blended return</em> based on your stock/bond mix. During working years, contributions are added (and grown with inflation). Starting at retirement, you withdraw the amount needed to cover spending (also inflation-adjusted) minus any Social Security or pension income.
           <br><br>
-          <strong>Monte Carlo simulation</strong> runs 1,000 scenarios where each year's return is drawn randomly from a normal distribution centred on your blended return with the volatility (σ) you set. Probability of success is the share of simulations where the portfolio survives to your plan-to age. The shaded band on the chart shows the 10th–90th percentile range of outcomes; the solid lines show the median.
+          <strong>Monte Carlo simulation</strong> runs 1,000 scenarios where each year's return is drawn randomly from a normal distribution centred on your blended return with the volatility (σ) you set. Probability of success is the share of simulations where the portfolio survives to your plan-to age. The chart shows all values in today's dollars: the shaded band is the interquartile range (P25–P75) and the solid line is the median.
           <br><br>
           "Today's dollars" divides nominal balances by cumulative inflation. The "nest egg needed" is the present-value lump sum — in today's dollars — to fund all net withdrawals through your plan-to age. When surplus equals zero in the deterministic model, the portfolio hits exactly $0 at plan age.
           <br><br>
@@ -470,7 +469,6 @@ function runMonteCarlo(p, retireAge, N = 1000) {
   const years   = planAge - p.currentAge + 1;
 
   let successCount = 0;
-  const nomByAge  = Array.from({length: years}, () => []);
   const realByAge = Array.from({length: years}, () => []);
 
   for (let sim = 0; sim < N; sim++) {
@@ -494,7 +492,6 @@ function runMonteCarlo(p, retireAge, N = 1000) {
       bal = bal * (1 + r) + contribution - netWithdrawal;
       if (bal < 0) { bal = 0; depleted = true; }
 
-      nomByAge[i].push(bal);
       realByAge[i].push(bal / inflFactor);
     }
     if (!depleted) successCount++;
@@ -505,12 +502,11 @@ function runMonteCarlo(p, retireAge, N = 1000) {
     return sorted[Math.floor(sorted.length * p)];
   };
 
-  const nomPct   = nomByAge.map(vals => ({
-    p10: pct(vals, 0.10), p50: pct(vals, 0.50), p90: pct(vals, 0.90),
+  const realPct = realByAge.map(vals => ({
+    p25: pct(vals, 0.25), p50: pct(vals, 0.50), p75: pct(vals, 0.75),
   }));
-  const realP50  = realByAge.map(vals => pct(vals, 0.50));
 
-  return { successRate: successCount / N, nomPct, realP50 };
+  return { successRate: successCount / N, realPct };
 }
 
 function findBreakeven(p) {
@@ -598,19 +594,17 @@ function project() {
   srEl.textContent  = successPct.toFixed(1) + '%';
   srEl.style.color  = successPct >= 90 ? 'var(--good)' : successPct >= 70 ? 'var(--warn)' : 'var(--bad)';
 
-  // Chart.
-  const labels      = rows.map(r => r.age);
-  const p10NomData  = mc.nomPct.map(v => v.p10);
-  const p90NomData  = mc.nomPct.map(v => v.p90);
-  const p50NomData  = mc.nomPct.map(v => v.p50);
-  const p50RealData = mc.realP50;
+  // Chart — all values in today's $, P25–P75 band.
+  const labels     = rows.map(r => r.age);
+  const p75Data    = mc.realPct.map(v => v.p75);
+  const p25Data    = mc.realPct.map(v => v.p25);
+  const p50Data    = mc.realPct.map(v => v.p50);
 
   if (chart) {
-    chart.data.labels              = labels;
-    chart.data.datasets[0].data   = p90NomData;
-    chart.data.datasets[1].data   = p10NomData;
-    chart.data.datasets[2].data   = p50NomData;
-    chart.data.datasets[3].data   = p50RealData;
+    chart.data.labels            = labels;
+    chart.data.datasets[0].data = p75Data;
+    chart.data.datasets[1].data = p25Data;
+    chart.data.datasets[2].data = p50Data;
     chart.options.plugins.annotation = buildAnnotation(retireAge);
     chart.update('none');
   } else {
@@ -620,20 +614,16 @@ function project() {
       data: {
         labels,
         datasets: [
-          // P90 upper bound — fills down to the P10 dataset (index +1).
-          { label: 'P90', data: p90NomData, borderWidth: 0, pointRadius: 0,
-            fill: '+1', backgroundColor: 'rgba(74,158,255,0.18)', tension: 0.2 },
-          // P10 lower bound.
-          { label: 'P10', data: p10NomData, borderWidth: 0, pointRadius: 0,
+          // P75 upper bound — fills down to P25 (next dataset).
+          { label: 'P75', data: p75Data, borderWidth: 0, pointRadius: 0,
+            fill: '+1', backgroundColor: 'rgba(74,222,128,0.2)', tension: 0.2 },
+          // P25 lower bound.
+          { label: 'P25', data: p25Data, borderWidth: 0, pointRadius: 0,
             fill: false, tension: 0.2 },
-          // Median nominal.
-          { label: 'Median (nominal)', data: p50NomData,
-            borderColor: '#4a9eff', backgroundColor: 'transparent',
-            borderWidth: 2, pointRadius: 0, fill: false, tension: 0.2 },
           // Median today's $.
-          { label: "Median (today's $)", data: p50RealData,
+          { label: "Median (today's $)", data: p50Data,
             borderColor: '#4ade80', backgroundColor: 'transparent',
-            borderWidth: 2, pointRadius: 0, fill: false, tension: 0.2 },
+            borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.2 },
         ],
       },
       options: {
@@ -644,10 +634,10 @@ function project() {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              title:  (items) => 'Age ' + items[0].label,
-              label:  (item)  => {
-                const labels = ['90th pct', '10th pct', 'Median (nominal)', "Median (today's $)"];
-                return labels[item.datasetIndex] + ': ' + fmtFull(item.parsed.y);
+              title: (items) => 'Age ' + items[0].label,
+              label: (item)  => {
+                const lbls = ['75th pct', '25th pct', 'Median'];
+                return lbls[item.datasetIndex] + " (today's $): " + fmtFull(item.parsed.y);
               },
             },
           },
@@ -655,7 +645,7 @@ function project() {
         },
         scales: {
           x: { title: { display: true, text: 'Age', color: '#8b95a3' }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b95a3' } },
-          y: { title: { display: true, text: 'Portfolio value', color: '#8b95a3' }, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#8b95a3', callback: (v) => fmt(v) } },
+          y: { title: { display: true, text: "Portfolio value (today's $)", color: '#8b95a3' }, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#8b95a3', callback: (v) => fmt(v) } },
         },
       },
     });
