@@ -161,6 +161,8 @@
   .legend-row { display: flex; gap: 16px; font-size: 11px; color: var(--text-dim); margin-top: 6px; flex-wrap: wrap; }
   .legend-dot  { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
   .legend-band { display: inline-block; width: 14px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .pct-btn { background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.15s; }
+  .pct-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
   details {
     margin-top: 20px;
     background: var(--panel-2);
@@ -311,7 +313,12 @@
         <div class="stat" style="border-color: var(--accent); background: rgba(74,158,255,0.08);">
           <div class="stat-label">Earliest breakeven retirement age</div>
           <div class="stat-value" id="s_breakeven">–</div>
-          <div class="stat-sub" style="margin-bottom:4px;">Earliest age where median simulation survives to plan age</div>
+          <div class="stat-sub" id="s_breakevenSub" style="margin-bottom:6px;">–</div>
+          <div style="display:flex;gap:4px;margin-bottom:6px;">
+            <button class="pct-btn" data-pct="10">P10</button>
+            <button class="pct-btn active" data-pct="25">P25</button>
+            <button class="pct-btn" data-pct="50">P50</button>
+          </div>
           <div class="stat-sub">
             <button id="btnApplyBreakeven" style="
               background: var(--accent); color: white; border: none;
@@ -514,20 +521,29 @@ function runMonteCarlo(p, retireAge, N = 1000) {
   };
 
   const realPct = realByAge.map(vals => ({
-    p25: pct(vals, 0.25), p50: pct(vals, 0.50), p75: pct(vals, 0.75),
+    p10: pct(vals, 0.10), p25: pct(vals, 0.25), p50: pct(vals, 0.50), p75: pct(vals, 0.75),
   }));
 
   return { successRate: successCount / N, realPct };
 }
 
-function findBreakeven(p) {
+function findBreakeven(p, pctile) {
   const minR = p.currentAge + 1;
   const maxR = Math.min(p.planAge - 1, p.currentAge + 60);
-  for (let R = minR; R <= maxR; R++) {
-    const s = simulate(p, R);
-    if (s.depletedAt === null && s.gapReal >= 0) return R;
+  const key  = pctile === 0.10 ? 'p10' : pctile === 0.50 ? 'p50' : 'p25';
+  const finalVal = (R) => {
+    const mc = runMonteCarlo(p, R, 200);
+    return mc.realPct[mc.realPct.length - 1][key];
+  };
+  if (finalVal(maxR) < 0) return null;
+  if (finalVal(minR) >= 0) return minR;
+  let lo = minR, hi = maxR;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (finalVal(mid) >= 0) hi = mid;
+    else lo = mid + 1;
   }
-  return null;
+  return lo;
 }
 
 function project() {
@@ -565,7 +581,13 @@ function project() {
   document.getElementById('s_gapNote').textContent      = (gapReal >= 0 ? 'surplus' : 'shortfall') + " in today's $";
 
   // Breakeven.
-  const breakeven   = findBreakeven(p);
+  const activePctBtn = document.querySelector('.pct-btn.active');
+  const pctile       = activePctBtn ? parseFloat(activePctBtn.dataset.pct) / 100 : 0.25;
+  const pctLabel     = activePctBtn ? 'P' + activePctBtn.dataset.pct : 'P25';
+  const successThreshold = { 0.10: '90%', 0.25: '75%', 0.50: '50%' }[pctile] || '75%';
+  document.getElementById('s_breakevenSub').textContent =
+    `${pctLabel} of MC scenarios survive to plan age (${successThreshold} success rate)`;
+  const breakeven   = findBreakeven(p, pctile);
   const breakevenEl = document.getElementById('s_breakeven');
   const btn         = document.getElementById('btnApplyBreakeven');
   if (breakeven === null) {
@@ -748,6 +770,22 @@ inputs.forEach(id => {
     ni.value = formatNi(id, num(id));
   });
 });
+
+document.querySelectorAll('.pct-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pct-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    localStorage.setItem('breakevenPct', btn.dataset.pct);
+    project();
+  });
+});
+// Restore saved percentile selection.
+const savedPct = localStorage.getItem('breakevenPct');
+if (savedPct) {
+  document.querySelectorAll('.pct-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.pct === savedPct);
+  });
+}
 
 document.getElementById('btnApplyBreakeven').addEventListener('click', (e) => {
   const v = e.target.dataset.value;
