@@ -356,6 +356,7 @@
                 <th>Age</th>
                 <th>Year</th>
                 <th>Contribution</th>
+                <th>Investment returns</th>
                 <th>Spending</th>
                 <th>SS/Pension</th>
                 <th>Net withdrawal</th>
@@ -425,21 +426,23 @@ function simulate(p, retireAge) {
     const ssNominal     = (isRetired && hasSS) ? p.ss * inflationFactor : 0;
     const netWithdrawal = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
 
-    bal = bal * (1 + p.blended) + contribution - netWithdrawal;
+    const returns = bal * p.blended;
+    bal = bal + returns + contribution - netWithdrawal;
     if (bal < 0 && depletedAt === null) { depletedAt = age; bal = 0; }
 
     rows.push({
       age, year: thisYear + offset,
-      contribution, spendNominal, ssNominal, netWithdrawal,
+      contribution, spendNominal, ssNominal, netWithdrawal, returns,
       balNominal: bal,
       balReal: bal / inflationFactor,
       isRetireYear: age === retireAge,
     });
   }
 
-  const retireRow = rows.find(r => r.age === retireAge);
-  const portfolioAtRetire     = retireRow ? retireRow.balNominal : 0;
-  const portfolioAtRetireReal = retireRow ? retireRow.balReal    : 0;
+  // Use balance entering retirement (last working year) so gap=0 means portfolio hits $0 at planAge.
+  const enteringRow = rows.find(r => r.age === retireAge - 1);
+  const portfolioAtRetire     = enteringRow ? enteringRow.balNominal : p.currentSavings;
+  const portfolioAtRetireReal = enteringRow ? enteringRow.balReal    : p.currentSavings;
 
   let required = 0;
   for (let age = retireAge; age <= planAge; age++) {
@@ -460,7 +463,7 @@ function findBreakeven(p) {
   const maxR = Math.min(p.planAge - 1, p.currentAge + 60);
   for (let R = minR; R <= maxR; R++) {
     const s = simulate(p, R);
-    if (s.gapReal >= 0 && s.depletedAt === null) return R;
+    if (s.depletedAt === null) return R;
   }
   return null;
 }
@@ -581,6 +584,7 @@ function project() {
     tr.innerHTML =
       `<td>${r.age}</td><td>${r.year}</td>` +
       `<td>${r.contribution  > 0 ? fmtFull(r.contribution)  : '–'}</td>` +
+      `<td>${fmtFull(r.returns)}</td>` +
       `<td>${r.spendNominal  > 0 ? fmtFull(r.spendNominal)  : '–'}</td>` +
       `<td>${r.ssNominal     > 0 ? fmtFull(r.ssNominal)     : '–'}</td>` +
       `<td>${r.netWithdrawal > 0 ? fmtFull(r.netWithdrawal) : '–'}</td>` +
