@@ -311,6 +311,7 @@
         <div class="stat" style="border-color: var(--accent); background: rgba(74,158,255,0.08);">
           <div class="stat-label">Earliest breakeven retirement age</div>
           <div class="stat-value" id="s_breakeven">–</div>
+          <div class="stat-sub" style="margin-bottom:4px;">Deterministic model — check probability of success for real-world risk</div>
           <div class="stat-sub">
             <button id="btnApplyBreakeven" style="
               background: var(--accent); color: white; border: none;
@@ -490,7 +491,7 @@ function runMonteCarlo(p, retireAge, N = 1000) {
       const netWithdrawal = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
 
       bal = bal * (1 + r) + contribution - netWithdrawal;
-      if (bal < 0) { bal = 0; depleted = true; }
+      if (bal < 0 && !depleted) depleted = true;
 
       realByAge[i].push(bal / inflFactor);
     }
