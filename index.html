@@ -241,6 +241,13 @@
       </div>
       <input class="slider" type="range" id="ssAge" min="55" max="75" step="1" value="67">
 
+      <div class="input-row">
+        <label>Effective tax rate on withdrawals</label>
+        <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_taxRate">%</span>
+      </div>
+      <input class="slider" type="range" id="taxRate" min="0" max="50" step="1" value="20">
+      <div class="note">Grosses up portfolio withdrawals to cover income tax. Enter 0 for Roth accounts or if your spending inputs are already pre-tax.</div>
+
       <div class="section-title">Portfolio mix &amp; returns</div>
 
       <div class="input-row">
@@ -355,7 +362,7 @@
                 <th>Investment returns</th>
                 <th>Spending</th>
                 <th>SS/Pension</th>
-                <th>Net withdrawal</th>
+                <th>Portfolio withdrawal</th>
                 <th>Net impact</th>
                 <th>Portfolio (nominal)</th>
                 <th>Portfolio (today's $)</th>
@@ -406,7 +413,7 @@ function formatNi(id, val) {
 }
 
 const inputs = ['currentAge', 'retireAge', 'planAge', 'currentSavings', 'annualSavings',
-  'spending', 'ss', 'ssAge', 'stockPct', 'stockRet', 'bondRet', 'inflation', 'sigma'];
+  'spending', 'ss', 'ssAge', 'taxRate', 'stockPct', 'stockRet', 'bondRet', 'inflation', 'sigma'];
 
 const num = (id) => {
   const ni = document.getElementById('ni_' + id);
@@ -444,19 +451,21 @@ function simulate(p, retireAge) {
     const isRetired  = age >= retireAge;
     const hasSS      = age >= p.ssAge;
 
-    const contribution  = isRetired ? 0 : p.annualSavings * inflFactor;
-    const spendNominal  = isRetired ? p.spending * inflFactor : 0;
-    const ssNominal     = (isRetired && hasSS) ? p.ss * inflFactor : 0;
-    const netWithdrawal = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
-    const returns       = bal * p.blended;
+    const contribution   = isRetired ? 0 : p.annualSavings * inflFactor;
+    const spendNominal   = isRetired ? p.spending * inflFactor : 0;
+    const ssNominal      = (isRetired && hasSS) ? p.ss * inflFactor : 0;
+    const afterTaxNeed   = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
+    const grossWithdrawal = afterTaxNeed > 0 ? afterTaxNeed / (1 - p.taxRate) : 0;
+    const returns        = bal * p.blended;
 
-    bal = bal + returns + contribution - netWithdrawal;
+    bal = bal + returns + contribution - grossWithdrawal;
     if (bal < 0 && depletedAt === null) { depletedAt = age; bal = 0; }
 
     rows.push({
       age, year: thisYear + offset,
-      contribution, returns, spendNominal, ssNominal, netWithdrawal,
-      netImpact: returns + contribution - netWithdrawal,
+      contribution, returns, spendNominal, ssNominal,
+      netWithdrawal: grossWithdrawal,
+      netImpact: returns + contribution - grossWithdrawal,
       balNominal: bal,
       balReal: bal / inflFactor,
       isRetireYear: age === retireAge,
@@ -469,10 +478,11 @@ function simulate(p, retireAge) {
 
   let required = 0;
   for (let age = retireAge; age <= planAge; age++) {
-    const ssThisYear = age >= p.ssAge ? p.ss : 0;
-    const netReal    = Math.max(0, p.spending - ssThisYear);
-    const k          = age - retireAge + 1;
-    required += netReal / Math.pow(1 + p.realReturn, k);
+    const ssThisYear  = age >= p.ssAge ? p.ss : 0;
+    const afterTaxNeed = Math.max(0, p.spending - ssThisYear);
+    const grossReal   = afterTaxNeed > 0 ? afterTaxNeed / (1 - p.taxRate) : 0;
+    const k           = age - retireAge + 1;
+    required += grossReal / Math.pow(1 + p.realReturn, k);
   }
 
   return { retireAge, planAge, rows, depletedAt,
@@ -503,12 +513,13 @@ function runMonteCarlo(p, retireAge, N = 1000) {
       // Draw this year's return from N(blended, sigma).
       const r = Math.max(-1, p.blended + p.sigma * randn());
 
-      const contribution  = isRetired ? 0 : p.annualSavings * inflFactor;
-      const spendNominal  = isRetired ? p.spending * inflFactor : 0;
-      const ssNominal     = (isRetired && hasSS) ? p.ss * inflFactor : 0;
-      const netWithdrawal = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
+      const contribution    = isRetired ? 0 : p.annualSavings * inflFactor;
+      const spendNominal    = isRetired ? p.spending * inflFactor : 0;
+      const ssNominal       = (isRetired && hasSS) ? p.ss * inflFactor : 0;
+      const afterTaxNeed    = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
+      const grossWithdrawal = afterTaxNeed > 0 ? afterTaxNeed / (1 - p.taxRate) : 0;
 
-      bal = bal * (1 + r) + contribution - netWithdrawal;
+      bal = bal * (1 + r) + contribution - grossWithdrawal;
       if (bal < 0 && !depleted) depleted = true;
 
       realByAge[i].push(bal / inflFactor);
@@ -560,6 +571,7 @@ function project() {
     ssAge:          num('ssAge'),
     inflation:      num('inflation') / 100,
     sigma:          num('sigma') / 100,
+    taxRate:        Math.min(0.99, num('taxRate') / 100),
   };
   const stockPct = num('stockPct') / 100;
   const stockRet = num('stockRet') / 100;
