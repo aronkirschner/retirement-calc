@@ -655,6 +655,8 @@ function project() {
   const p10Data = mc.realPct.map(v => v.p10);
   const p5Data  = mc.realPct.map(v => v.p5);
 
+  const yMax = Math.max(...p90Data) * 1.1;
+
   if (chart) {
     chart.data.labels             = labels;
     chart.data.datasets[0].data  = p95Data;
@@ -664,6 +666,7 @@ function project() {
     chart.data.datasets[4].data  = p10Data;
     chart.data.datasets[5].data  = p5Data;
     chart.data.datasets[6].data  = detData;
+    chart.options.scales.y.max   = yMax;
     chart.options.plugins.annotation = buildAnnotation(retireAge);
     chart.update('none');
   } else {
@@ -712,7 +715,7 @@ function project() {
         },
         scales: {
           x: { title: { display: true, text: 'Age', color: '#8b95a3' }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b95a3' } },
-          y: { title: { display: true, text: "Portfolio value (today's $)", color: '#8b95a3' }, grid: { color: (ctx) => ctx.tick.value === 0 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.06)', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 }, ticks: { color: (ctx) => ctx.tick.value === 0 ? 'rgba(255,255,255,0.8)' : '#8b95a3', callback: (v) => fmt(v) } },
+          y: { max: yMax, title: { display: true, text: "Portfolio value (today's $)", color: '#8b95a3' }, grid: { color: (ctx) => ctx.tick.value === 0 ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.06)', lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1 }, ticks: { color: (ctx) => ctx.tick.value === 0 ? 'rgba(255,255,255,0.8)' : '#8b95a3', callback: (v) => fmt(v) } },
         },
       },
     });
