@@ -177,6 +177,20 @@
   th { color: var(--text-dim); font-weight: 600; font-size: 11px; text-transform: uppercase; position: sticky; top: 0; background: var(--panel-2); }
   tr.retire-row td { background: rgba(74, 158, 255, 0.08); font-weight: 600; }
   .note { font-size: 11px; color: var(--text-dim); margin-top: 8px; font-style: italic; }
+  .tent-badge {
+    display: inline-block;
+    background: rgba(251,191,36,0.15);
+    border: 1px solid rgba(251,191,36,0.4);
+    color: var(--warn);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
 </style>
 </head>
 <body>
@@ -283,8 +297,30 @@
         <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_sigma">%</span>
       </div>
       <input class="slider" type="range" id="sigma" min="0" max="30" step="0.5" value="12">
+      <div class="note">Auto-derived from your allocation (stocks σ ≈ 17%, bonds σ ≈ 6%). Override for custom scenarios. When a bond tent is active, MC uses per-year σ based on that year's allocation.</div>
 
-      <div class="note">Volatility is the standard deviation of annual portfolio returns. Typical values: 100% stocks ≈ 17%, 70/30 ≈ 12%, 100% bonds ≈ 6%.</div>
+      <div class="section-title">Bond tent</div>
+
+      <div class="input-row" style="margin-bottom:6px;">
+        <label for="tentEnabled" style="cursor:pointer;">Enable bond tent at retirement</label>
+        <input type="checkbox" id="tentEnabled" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;">
+      </div>
+
+      <div id="tentSection" style="display:none;">
+        <div class="input-row">
+          <label>Peak bond % at retirement</label>
+          <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_tentBondPct">%</span>
+        </div>
+        <input class="slider" type="range" id="tentBondPct" min="0" max="100" step="5" value="50">
+
+        <div class="input-row">
+          <label>Years to unwind to target allocation</label>
+          <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_tentYears"> yrs</span>
+        </div>
+        <input class="slider" type="range" id="tentYears" min="1" max="20" step="1" value="7">
+
+        <div class="note">At retirement the portfolio shifts to the peak bond allocation, then gradually reverts to your target mix over the specified years. This cushions early-retirement sequence-of-returns risk at the cost of slightly lower expected returns. For a true tent, peak bond % should exceed your current bond allocation.</div>
+      </div>
     </div>
 
     <!-- RESULTS -->
@@ -338,7 +374,7 @@
 
       <div class="panel">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
-          <div style="font-size:14px;font-weight:600;">Portfolio value over time</div>
+          <div style="font-size:14px;font-weight:600;">Portfolio value over time <span id="chartTentBadge" class="tent-badge" style="display:none;">Bond tent active</span></div>
           <div class="legend-row">
             <span><span class="legend-band" style="background:rgba(74,222,128,0.12)"></span>MC P5–P95</span>
             <span><span class="legend-band" style="background:rgba(74,222,128,0.28)"></span>MC P25–P75 (core)</span>
@@ -355,9 +391,10 @@
         <div style="max-height:400px;overflow:auto;margin-top:8px;">
           <table id="projectionTable">
             <thead>
-              <tr>
+              <tr id="tableHeadRow">
                 <th>Age</th>
                 <th>Year</th>
+                <th>Stocks %</th>
                 <th>Contribution</th>
                 <th>Investment returns</th>
                 <th>Spending</th>
@@ -376,13 +413,17 @@
       <details>
         <summary>How this model works</summary>
         <div style="padding:8px 0;font-size:13px;color:var(--text-dim);line-height:1.6;">
-          Each year the portfolio earns a <em>blended return</em> based on your stock/bond mix. During working years, contributions are added (and grown with inflation). Starting at retirement, you withdraw the amount needed to cover spending (also inflation-adjusted) minus any Social Security or pension income.
+          Each year the portfolio earns a <em>blended return</em> based on that year's stock/bond allocation. During working years, contributions are added (and grown with inflation). Starting at retirement, you withdraw the amount needed to cover spending (also inflation-adjusted) minus any Social Security or pension income.
           <br><br>
-          The <strong>blue line</strong> on the chart is the deterministic (constant returns) path — the same numbers shown in the year-by-year table. The <strong>green band</strong> shows the Monte Carlo interquartile range (P25–P75): 1,000 simulations where each year's return is drawn from a normal distribution centred on your blended return with the volatility (σ) you set. Because volatility creates variance drag, the deterministic line typically sits above the band's midpoint — this gap grows with time and equity allocation. Probability of success is the share of MC simulations where the portfolio survives to your plan-to age.
+          <strong>Volatility</strong> is auto-derived from your allocation using a two-asset portfolio formula (stocks σ ≈ 17%, bonds σ ≈ 6%, correlation ρ ≈ −0.10), giving ~12% for a 70/30 portfolio. You can override the σ field for custom scenarios.
           <br><br>
-          "Today's dollars" divides nominal balances by cumulative inflation. The "nest egg needed" is the present-value lump sum — in today's dollars — to fund all net withdrawals through your plan-to age. When surplus equals zero in the deterministic model, the portfolio hits exactly $0 at plan age.
+          <strong>Bond tent:</strong> When enabled, the portfolio shifts to a higher bond allocation at retirement to cushion sequence-of-returns risk, then glides back to your target mix over the specified years. Both the deterministic line and the Monte Carlo simulation use the time-varying allocation — so reduced volatility during the tent period is reflected in the MC bands. This typically raises success probability in early retirement at a small cost to long-term expected returns.
           <br><br>
-          <strong>Limitations:</strong> Returns are assumed normally distributed (no fat tails), no taxes, no healthcare shocks, no RMDs. The ~4% rule is a common rule of thumb for a 70/30 US portfolio.
+          The <strong>blue line</strong> is the deterministic (constant average returns) path. The <strong>green band</strong> shows the Monte Carlo interquartile range (P25–P75): 1,000 simulations where each year's return is drawn from a normal distribution centred on that year's blended return with the corresponding σ. Probability of success is the share of MC simulations where the portfolio survives to your plan-to age.
+          <br><br>
+          "Today's dollars" divides nominal balances by cumulative inflation. The "nest egg needed" is the present-value lump sum to fund all net withdrawals through plan age (discounted at the target-allocation real return).
+          <br><br>
+          <strong>Limitations:</strong> Returns are assumed normally distributed (no fat tails), no taxes (use the tax rate input to gross up), no healthcare shocks, no RMDs. The ~4% rule is a common rule of thumb for a 70/30 US portfolio.
         </div>
       </details>
     </div>
@@ -413,7 +454,8 @@ function formatNi(id, val) {
 }
 
 const inputs = ['currentAge', 'retireAge', 'planAge', 'currentSavings', 'annualSavings',
-  'spending', 'ss', 'ssAge', 'taxRate', 'stockPct', 'stockRet', 'bondRet', 'inflation', 'sigma'];
+  'spending', 'ss', 'ssAge', 'taxRate', 'stockPct', 'stockRet', 'bondRet', 'inflation', 'sigma',
+  'tentBondPct', 'tentYears'];
 
 const num = (id) => {
   const ni = document.getElementById('ni_' + id);
@@ -434,6 +476,21 @@ function randn() {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
+// Portfolio volatility from two-asset formula with stock-bond correlation ≈ -0.10
+const SIGMA_S = 0.17, SIGMA_B = 0.06, SIGMA_RHO = -0.10;
+function computeSigma(sp) {
+  const b = 1 - sp;
+  return Math.sqrt(sp*sp*SIGMA_S*SIGMA_S + b*b*SIGMA_B*SIGMA_B + 2*sp*b*SIGMA_S*SIGMA_B*SIGMA_RHO);
+}
+
+// Stock fraction for a given age, honouring the bond tent glide path.
+function allocForAge(age, p, retireAge) {
+  if (!p.tentEnabled || age < retireAge) return p.stockPct;
+  const tentSP = 1 - p.tentBondPct;
+  if (age >= retireAge + p.tentYears) return p.stockPct;
+  return tentSP + (age - retireAge) / p.tentYears * (p.stockPct - tentSP);
+}
+
 let chart;
 
 // Deterministic simulation — used for stat cards, table, and breakeven.
@@ -451,18 +508,22 @@ function simulate(p, retireAge) {
     const isRetired  = age >= retireAge;
     const hasSS      = age >= p.ssAge;
 
-    const contribution   = isRetired ? 0 : p.annualSavings * inflFactor;
-    const spendNominal   = isRetired ? p.spending * inflFactor : 0;
-    const ssNominal      = (isRetired && hasSS) ? p.ss * inflFactor : 0;
-    const afterTaxNeed   = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
+    const sp      = allocForAge(age, p, retireAge);
+    const blended = sp * p.stockRet + (1 - sp) * p.bondRet;
+
+    const contribution    = isRetired ? 0 : p.annualSavings * inflFactor;
+    const spendNominal    = isRetired ? p.spending * inflFactor : 0;
+    const ssNominal       = (isRetired && hasSS) ? p.ss * inflFactor : 0;
+    const afterTaxNeed    = isRetired ? Math.max(0, spendNominal - ssNominal) : 0;
     const grossWithdrawal = afterTaxNeed > 0 ? afterTaxNeed / (1 - p.taxRate) : 0;
-    const returns        = bal * p.blended;
+    const returns         = bal * blended;
 
     bal = bal + returns + contribution - grossWithdrawal;
     if (bal < 0 && depletedAt === null) { depletedAt = age; bal = 0; }
 
     rows.push({
       age, year: thisYear + offset,
+      stockPct: sp,
       contribution, returns, spendNominal, ssNominal,
       netWithdrawal: grossWithdrawal,
       netImpact: returns + contribution - grossWithdrawal,
@@ -476,12 +537,13 @@ function simulate(p, retireAge) {
   const portfolioAtRetire     = enteringRow ? enteringRow.balNominal : p.currentSavings;
   const portfolioAtRetireReal = enteringRow ? enteringRow.balReal    : p.currentSavings;
 
+  // Required nest egg — discounted at base-allocation real return (benchmark, no tent)
   let required = 0;
   for (let age = retireAge; age <= planAge; age++) {
-    const ssThisYear  = age >= p.ssAge ? p.ss : 0;
+    const ssThisYear   = age >= p.ssAge ? p.ss : 0;
     const afterTaxNeed = Math.max(0, p.spending - ssThisYear);
-    const grossReal   = afterTaxNeed > 0 ? afterTaxNeed / (1 - p.taxRate) : 0;
-    const k           = age - retireAge + 1;
+    const grossReal    = afterTaxNeed > 0 ? afterTaxNeed / (1 - p.taxRate) : 0;
+    const k            = age - retireAge + 1;
     required += grossReal / Math.pow(1 + p.realReturn, k);
   }
 
@@ -505,13 +567,18 @@ function runMonteCarlo(p, retireAge, N = 1000) {
     let depleted = false;
 
     for (let i = 0; i < years; i++) {
-      const age       = p.currentAge + i;
+      const age        = p.currentAge + i;
       const inflFactor = Math.pow(1 + p.inflation, i);
       const isRetired  = age >= retireAge;
       const hasSS      = age >= p.ssAge;
 
-      // Draw this year's return from N(blended, sigma).
-      const r = Math.max(-1, p.blended + p.sigma * randn());
+      // Per-year allocation respects bond tent; derive blended return and σ from it.
+      const sp      = allocForAge(age, p, retireAge);
+      const blended = sp * p.stockRet + (1 - sp) * p.bondRet;
+      // When tent is active use allocation-derived σ; otherwise use the (possibly overridden) σ input.
+      const sigma   = p.tentEnabled ? computeSigma(sp) : p.sigma;
+
+      const r = Math.max(-1, blended + sigma * randn());
 
       const contribution    = isRetired ? 0 : p.annualSavings * inflFactor;
       const spendNominal    = isRetired ? p.spending * inflFactor : 0;
@@ -561,6 +628,18 @@ function findBreakeven(p, pctile) {
 }
 
 function project() {
+  const stockPct = num('stockPct') / 100;
+  const stockRet = num('stockRet') / 100;
+  const bondRet  = num('bondRet')  / 100;
+
+  const tentEnabled  = document.getElementById('tentEnabled').checked;
+  const tentBondPct  = tentEnabled ? Math.min(1, num('tentBondPct') / 100) : 0;
+  const tentYears    = tentEnabled ? Math.max(1, Math.round(num('tentYears'))) : 0;
+
+  const blended    = stockPct * stockRet + (1 - stockPct) * bondRet;
+  const inflation  = num('inflation') / 100;
+  const realReturn = (1 + blended) / (1 + inflation) - 1;
+
   const p = {
     currentAge:     num('currentAge'),
     planAge:        Math.max(num('currentAge') + 2, num('planAge')),
@@ -569,15 +648,13 @@ function project() {
     spending:       num('spending'),
     ss:             num('ss'),
     ssAge:          num('ssAge'),
-    inflation:      num('inflation') / 100,
+    inflation,
     sigma:          num('sigma') / 100,
     taxRate:        Math.min(0.99, num('taxRate') / 100),
+    stockPct, stockRet, bondRet,
+    blended, realReturn,
+    tentEnabled, tentBondPct, tentYears,
   };
-  const stockPct = num('stockPct') / 100;
-  const stockRet = num('stockRet') / 100;
-  const bondRet  = num('bondRet')  / 100;
-  p.blended    = stockPct * stockRet + (1 - stockPct) * bondRet;
-  p.realReturn = (1 + p.blended) / (1 + p.inflation) - 1;
 
   const retireAge = Math.max(p.currentAge + 1, num('retireAge'));
   const sim = simulate(p, retireAge);
@@ -585,8 +662,8 @@ function project() {
           portfolioAtRetire, portfolioAtRetireReal, required, gapReal } = sim;
 
   // Deterministic stat cards.
-  document.getElementById('s_blended').textContent     = (p.blended * 100).toFixed(1) + '%';
-  document.getElementById('s_real').textContent         = (p.realReturn * 100).toFixed(1) + '%';
+  document.getElementById('s_blended').textContent     = (blended * 100).toFixed(1) + '%';
+  document.getElementById('s_real').textContent         = (realReturn * 100).toFixed(1) + '%';
   document.getElementById('s_atRetire').textContent     = fmt(portfolioAtRetire);
   document.getElementById('s_atRetireReal').textContent = fmt(portfolioAtRetireReal);
   document.getElementById('s_required').textContent     = fmt(required);
@@ -594,6 +671,9 @@ function project() {
   document.getElementById('s_gap').textContent          = fmt(gapReal);
   document.getElementById('s_gap').style.color          = gapReal >= 0 ? 'var(--good)' : 'var(--bad)';
   document.getElementById('s_gapNote').textContent      = (gapReal >= 0 ? 'surplus' : 'shortfall') + " in today's $";
+
+  // Bond tent badge on chart title.
+  document.getElementById('chartTentBadge').style.display = tentEnabled ? 'inline-block' : 'none';
 
   // Breakeven.
   const activePctBtn = document.querySelector('.pct-btn.active');
@@ -644,8 +724,6 @@ function project() {
   srEl.style.color  = successPct >= 90 ? 'var(--good)' : successPct >= 70 ? 'var(--warn)' : 'var(--bad)';
 
   // Chart — today's $: deterministic line + MC percentile bands.
-  // Dataset order: P95, P90, P75, P25, P10, P5, Deterministic.
-  // Each fills to the next (+1), creating concentric bands darkening toward the core.
   const labels  = rows.map(r => r.age);
   const detData = rows.map(r => r.balReal);
   const p95Data = mc.realPct.map(v => v.p95);
@@ -667,7 +745,7 @@ function project() {
     chart.data.datasets[5].data  = p5Data;
     chart.data.datasets[6].data  = detData;
     chart.options.scales.y.max   = yMax;
-    chart.options.plugins.annotation = buildAnnotation(retireAge);
+    chart.options.plugins.annotation = buildAnnotation(retireAge, p);
     chart.update('none');
   } else {
     const ctx = document.getElementById('chart').getContext('2d');
@@ -711,7 +789,7 @@ function project() {
             },
             filter: (item) => [0, 2, 3, 5, 6].includes(item.datasetIndex),
           },
-          annotation: buildAnnotation(retireAge),
+          annotation: buildAnnotation(retireAge, p),
         },
         scales: {
           x: { title: { display: true, text: 'Age', color: '#8b95a3' }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8b95a3' } },
@@ -729,6 +807,7 @@ function project() {
     if (r.isRetireYear) tr.className = 'retire-row';
     tr.innerHTML =
       `<td>${r.age}</td><td>${r.year}</td>` +
+      `<td>${Math.round(r.stockPct * 100)}%</td>` +
       `<td>${r.contribution  > 0 ? fmtFull(r.contribution)  : '–'}</td>` +
       `<td>${fmtFull(r.returns)}</td>` +
       `<td>${r.spendNominal  > 0 ? fmtFull(r.spendNominal)  : '–'}</td>` +
@@ -740,20 +819,38 @@ function project() {
   });
 }
 
-function buildAnnotation(retireAge) {
-  return {
-    annotations: {
-      retireLine:  { type: 'line',  scaleID: 'x', value: retireAge, borderColor: 'rgba(74,158,255,0.4)', borderWidth: 1, borderDash: [4, 4] },
-      retireLabel: { type: 'label', scaleID: 'x', value: retireAge, content: 'Retirement', color: '#8b95a3', font: { size: 11 }, position: 'start', yAdjust: -10 },
-    },
+function buildAnnotation(retireAge, p) {
+  const annotations = {
+    retireLine:  { type: 'line',  scaleID: 'x', value: retireAge, borderColor: 'rgba(74,158,255,0.4)', borderWidth: 1, borderDash: [4, 4] },
+    retireLabel: { type: 'label', scaleID: 'x', value: retireAge, content: 'Retirement', color: '#8b95a3', font: { size: 11 }, position: 'start', yAdjust: -10 },
   };
+  // Shade the tent unwind period.
+  if (p && p.tentEnabled && p.tentYears > 0) {
+    annotations.tentBox = {
+      type: 'box',
+      xMin: retireAge, xMax: retireAge + p.tentYears,
+      backgroundColor: 'rgba(251,191,36,0.05)',
+      borderColor: 'rgba(251,191,36,0.2)',
+      borderWidth: 1,
+    };
+  }
+  return { annotations };
+}
+
+function autoDeriveSigma() {
+  const sp    = num('stockPct') / 100;
+  const sigma = computeSigma(sp);
+  const niSigma     = document.getElementById('ni_sigma');
+  const sliderSigma = document.getElementById('sigma');
+  if (niSigma)     niSigma.value     = (sigma * 100).toFixed(1);
+  if (sliderSigma) sliderSigma.value = Math.min(30, Math.max(0, Math.round(sigma * 200) / 2));
 }
 
 function syncSlider(id) {
   const slider = document.getElementById(id);
   const val = num(id);
   slider.value = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), val));
-  if (id === 'stockPct') updateBondBar(Math.max(0, Math.min(100, val)));
+  if (id === 'stockPct') { updateBondBar(Math.max(0, Math.min(100, val))); autoDeriveSigma(); }
 }
 
 function syncNumInput(id) {
@@ -761,7 +858,7 @@ function syncNumInput(id) {
   const ni = document.getElementById('ni_' + id);
   if (!ni) return;
   ni.value = formatNi(id, slider.value);
-  if (id === 'stockPct') updateBondBar(parseFloat(slider.value));
+  if (id === 'stockPct') { updateBondBar(parseFloat(slider.value)); autoDeriveSigma(); }
 }
 
 function updateBondBar(sp) {
@@ -773,6 +870,7 @@ function updateBondBar(sp) {
 function saveInputs() {
   const saved = {};
   inputs.forEach(id => { saved[id] = num(id); });
+  saved['tentEnabled'] = document.getElementById('tentEnabled').checked;
   localStorage.setItem('retirementCalc', JSON.stringify(saved));
 }
 
@@ -786,6 +884,10 @@ function loadInputs() {
       if (ni) ni.value = formatNi(id, saved[id]);
       syncSlider(id);
     });
+    if (saved['tentEnabled'] !== undefined) {
+      document.getElementById('tentEnabled').checked = saved['tentEnabled'];
+      document.getElementById('tentSection').style.display = saved['tentEnabled'] ? 'block' : 'none';
+    }
   } catch (e) {}
 }
 
@@ -823,6 +925,13 @@ if (savedPct) {
   });
 }
 
+document.getElementById('tentEnabled').addEventListener('change', () => {
+  const enabled = document.getElementById('tentEnabled').checked;
+  document.getElementById('tentSection').style.display = enabled ? 'block' : 'none';
+  project();
+  saveInputs();
+});
+
 document.getElementById('btnApplyBreakeven').addEventListener('click', (e) => {
   const v = e.target.dataset.value;
   if (!v) return;
@@ -835,11 +944,13 @@ document.getElementById('btnApplyBreakeven').addEventListener('click', (e) => {
   saveInputs();
 });
 
+// Init num-inputs from slider defaults, then restore localStorage, then run.
 inputs.forEach(id => {
   const ni = document.getElementById('ni_' + id);
   if (ni) ni.value = formatNi(id, document.getElementById(id).value);
 });
 loadInputs();
+autoDeriveSigma(); // ensure σ matches loaded allocation
 project();
 </script>
 </body>
