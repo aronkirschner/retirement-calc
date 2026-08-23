@@ -250,6 +250,18 @@
     margin-bottom: 4px;
     flex-wrap: wrap;
   }
+  details.panel > summary.sens-head { cursor: pointer; list-style: none; margin-bottom: 4px; color: var(--text); font-size: 14px; }
+  details.panel > summary.sens-head::-webkit-details-marker { display: none; }
+  details.panel > summary.sens-head:hover .sens-caret { color: var(--accent); }
+  .sens-caret {
+    display: inline-block;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-right: 7px;
+    vertical-align: middle;
+    transition: transform 0.15s ease;
+  }
+  details.panel[open] > summary.sens-head .sens-caret { transform: rotate(90deg); }
   .sens-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 14px; }
   .sens-row {
     display: grid;
@@ -493,20 +505,20 @@
         </div>
       </div>
 
-      <div class="panel" style="margin-top:20px;">
-        <div class="sens-head">
-          <div style="font-size:14px;font-weight:600;" data-help="Each input is swung one at a time by a plausible amount while everything else stays fixed, and the plan is re-simulated. The bars show how many percentage points the probability of success moves. Longer bar = the lever that matters most for you right now — sensitivity depends on your own numbers, so it changes as you edit them.">What moves the needle</div>
+      <details class="panel" id="sensPanel" style="margin-top:20px;" open>
+        <summary class="sens-head">
+          <div style="font-size:14px;font-weight:600;"><span class="sens-caret">&#9654;</span><span data-help="Each input is swung one at a time by a plausible amount while everything else stays fixed, and the plan is re-simulated. The bars show how many percentage points the probability of success moves. Longer bar = the lever that matters most for you right now — sensitivity depends on your own numbers, so it changes as you edit them.">What moves the needle</span></div>
           <div class="legend-row">
             <span><span class="legend-band" style="background:var(--good)"></span>Raises success odds</span>
             <span><span class="legend-band" style="background:var(--bad)"></span>Lowers success odds</span>
           </div>
-        </div>
+        </summary>
         <div class="sens-sub">Change in probability of success when each input is swung on its own.</div>
         <div class="sens-lead" id="sensLead">–</div>
         <div id="sensRows"></div>
         <div class="sens-axis"><span id="sensAxisLo">–</span><span>no change</span><span id="sensAxisHi">+</span></div>
         <div class="sens-note" id="sensNote"></div>
-      </div>
+      </details>
 
       <details>
         <summary>Year-by-year projection (deterministic)</summary>
@@ -880,12 +892,20 @@ function renderSensitivity(res) {
 }
 
 let sensTimer = null;
+let sensPending = null;   // latest inputs awaiting a run (set while collapsed too)
+
+function runPendingSensitivity() {
+  if (!sensPending) return;
+  renderSensitivity(computeSensitivity(sensPending.p, sensPending.retireAge));
+  sensPending = null;
+}
+
 function scheduleSensitivity(p, retireAge) {
   clearTimeout(sensTimer);
-  const snapshot = Object.assign({}, p);
-  sensTimer = setTimeout(() => {
-    renderSensitivity(computeSensitivity(snapshot, retireAge));
-  }, 200);   // debounce: don't re-run 27 simulations mid-slider-drag
+  sensPending = { p: Object.assign({}, p), retireAge };
+  const panel = document.getElementById('sensPanel');
+  if (panel && !panel.open) return;   // collapsed — skip the work, recompute on reopen
+  sensTimer = setTimeout(runPendingSensitivity, 200);   // debounce mid-slider-drag
 }
 
 function project() {
@@ -1213,6 +1233,15 @@ inputs.forEach(id => {
   const ni = document.getElementById('ni_' + id);
   if (ni) ni.value = formatNi(id, document.getElementById(id).value);
 });
+(() => {
+  const panel = document.getElementById('sensPanel');
+  if (localStorage.getItem('sensPanelOpen') === 'false') panel.open = false;
+  panel.addEventListener('toggle', () => {
+    localStorage.setItem('sensPanelOpen', panel.open);
+    if (panel.open) runPendingSensitivity();   // catch up on anything changed while closed
+  });
+})();
+
 loadInputs();
 autoDeriveSigma(); // ensure σ matches loaded allocation
 project();
