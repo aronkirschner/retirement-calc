@@ -241,6 +241,63 @@
     pointer-events: none;
   }
   #tipbox.show { opacity: 1; visibility: visible; }
+
+  .sens-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+  .sens-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 14px; }
+  .sens-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 5px 0;
+  }
+  .sens-row + .sens-row { border-top: 1px solid rgba(45,55,72,0.5); }
+  .sens-name { font-size: 12px; color: var(--text); }
+  .sens-name span { display: block; font-size: 10px; color: var(--text-dim); }
+  .sens-track {
+    position: relative;
+    height: 26px;
+    background: linear-gradient(var(--border), var(--border)) center / 1px 100% no-repeat;
+  }
+  .sens-bar {
+    position: absolute;
+    height: 9px;
+    border-radius: 2px;
+    transition: width 0.15s ease, left 0.15s ease;
+  }
+  .sens-bar.up   { background: var(--good); }
+  .sens-bar.down { background: var(--bad); }
+  .sens-bar.flat { background: var(--border); }
+  .sens-tag {
+    position: absolute;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dim);
+    white-space: nowrap;
+    line-height: 9px;
+  }
+  .sens-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    padding-left: 162px;
+  }
+  .sens-note { font-size: 11px; color: var(--text-dim); font-style: italic; margin-top: 10px; }
+  .sens-lead { font-size: 13px; margin-bottom: 12px; }
+  .sens-lead strong { color: var(--accent); }
+  @media (max-width: 600px) {
+    .sens-row { grid-template-columns: 110px 1fr; }
+    .sens-axis { padding-left: 122px; }
+  }
 </style>
 </head>
 <body>
@@ -436,6 +493,21 @@
         </div>
       </div>
 
+      <div class="panel" style="margin-top:20px;">
+        <div class="sens-head">
+          <div style="font-size:14px;font-weight:600;" data-help="Each input is swung one at a time by a plausible amount while everything else stays fixed, and the plan is re-simulated. The bars show how many percentage points the probability of success moves. Longer bar = the lever that matters most for you right now — sensitivity depends on your own numbers, so it changes as you edit them.">What moves the needle</div>
+          <div class="legend-row">
+            <span><span class="legend-band" style="background:var(--good)"></span>Raises success odds</span>
+            <span><span class="legend-band" style="background:var(--bad)"></span>Lowers success odds</span>
+          </div>
+        </div>
+        <div class="sens-sub">Change in probability of success when each input is swung on its own.</div>
+        <div class="sens-lead" id="sensLead">–</div>
+        <div id="sensRows"></div>
+        <div class="sens-axis"><span id="sensAxisLo">–</span><span>no change</span><span id="sensAxisHi">+</span></div>
+        <div class="sens-note" id="sensNote"></div>
+      </div>
+
       <details>
         <summary>Year-by-year projection (deterministic)</summary>
         <div style="max-height:400px;overflow:auto;margin-top:8px;">
@@ -472,6 +544,8 @@
           The <strong>blue line</strong> is the deterministic (constant average returns) path. The <strong>green band</strong> shows the Monte Carlo interquartile range (P25–P75): 1,000 simulations where each year's return is drawn from a normal distribution centred on that year's blended return with the corresponding σ. Probability of success is the share of MC simulations where the portfolio survives to your plan-to age.
           <br><br>
           "Today's dollars" divides nominal balances by cumulative inflation. The "nest egg needed" is the present-value lump sum to fund all net withdrawals through plan age (discounted at the target-allocation real return).
+          <br><br>
+          <strong>What moves the needle</strong> re-runs the Monte Carlo with one input swung at a time (ages by a couple of years, dollar amounts by 10%, rates by a percentage point) while everything else is held fixed, and reports the change in probability of success. Every run uses 400 simulations drawn from the same random seed, so a bar reflects the input itself rather than simulation noise. Swinging the stock allocation also re-derives volatility, exactly as the σ field does. Sensitivity is specific to your inputs — a plan that is already 99% funded shows small bars everywhere.
           <br><br>
           <strong>Limitations:</strong> Returns are assumed normally distributed (no fat tails), no taxes (use the tax rate input to gross up), no healthcare shocks, no RMDs. The ~4% rule is a common rule of thumb for a 70/30 US portfolio.
         </div>
@@ -677,6 +751,143 @@ function findBreakeven(p, pctile) {
   return lo;
 }
 
+
+// ---- Sensitivity analysis (tornado) -------------------------------------
+// Swing one input at a time by a plausible amount, re-run the Monte Carlo with
+// the same seed (common random numbers, so differences are the parameter, not
+// simulation noise), and report the move in probability of success.
+const SENS_N = 400;
+
+const SENS_SPECS = [
+  { key: 'retireAge',      label: 'Retirement age',     abs: 2,    unit: 'yrs' },
+  { key: 'planAge',        label: 'Plan to age',        abs: 5,    unit: 'yrs' },
+  { key: 'currentSavings', label: 'Current savings',    rel: 0.10 },
+  { key: 'annualSavings',  label: 'Annual savings',     rel: 0.10 },
+  { key: 'spending',       label: 'Annual spending',    rel: 0.10 },
+  { key: 'ss',             label: 'SS / pension',       rel: 0.10 },
+  { key: 'ssAge',          label: 'Benefits start age', abs: 2,    unit: 'yrs' },
+  { key: 'taxRate',        label: 'Tax rate',           abs: 0.05, unit: 'pp' },
+  { key: 'stockPct',       label: 'Stock allocation',   abs: 0.10, unit: 'pp' },
+  { key: 'stockRet',       label: 'Stock return',       abs: 0.01, unit: 'pp' },
+  { key: 'bondRet',        label: 'Bond return',        abs: 0.01, unit: 'pp' },
+  { key: 'inflation',      label: 'Inflation',          abs: 0.01, unit: 'pp' },
+  { key: 'sigma',          label: 'Volatility (\u03c3)',  abs: 0.03, unit: 'pp', skipIfTent: true },
+];
+
+const SENS_BOUNDS = {
+  currentSavings: [0, Infinity], annualSavings: [0, Infinity], spending: [0, Infinity],
+  ss: [0, Infinity], ssAge: [50, 80], taxRate: [0, 0.95], stockPct: [0, 1],
+  stockRet: [0, 0.30], bondRet: [0, 0.20], inflation: [0, 0.15], sigma: [0, 0.60],
+};
+
+// Clone p (and the separate retireAge) with one field changed, refreshing anything derived from it.
+function perturb(p, retireAge, key, value) {
+  const q = Object.assign({}, p);
+  let R = retireAge;
+  if (key === 'retireAge') {
+    R = Math.round(Math.max(q.currentAge + 1, Math.min(q.planAge - 1, value)));
+  } else {
+    const b = SENS_BOUNDS[key] || [-Infinity, Infinity];
+    q[key] = Math.max(b[0], Math.min(b[1], value));
+    if (key === 'planAge')  q.planAge = Math.round(Math.max(R + 1, value));
+    if (key === 'ssAge')    q.ssAge   = Math.round(q.ssAge);
+    // The app auto-derives volatility from the allocation, so mirror that here.
+    if (key === 'stockPct') q.sigma   = computeSigma(q.stockPct);
+  }
+  q.blended    = q.stockPct * q.stockRet + (1 - q.stockPct) * q.bondRet;
+  q.realReturn = (1 + q.blended) / (1 + q.inflation) - 1;
+  return { p: q, R };
+}
+
+function swingLabel(spec, sign) {
+  const s = sign > 0 ? '+' : '\u2212';
+  if (spec.rel)             return s + Math.round(spec.rel * 100) + '%';
+  if (spec.unit === 'yrs')  return s + spec.abs + ' yrs';
+  return s + (spec.abs * 100).toFixed(spec.abs * 100 % 1 ? 1 : 0) + 'pp';
+}
+
+function computeSensitivity(p, retireAge) {
+  const base = runMonteCarlo(p, retireAge, SENS_N).successRate;
+  const rows = [];
+
+  SENS_SPECS.forEach(spec => {
+    if (spec.skipIfTent && p.tentEnabled) return;   // σ input is unused while a tent is active
+    const cur   = spec.key === 'retireAge' ? retireAge : p[spec.key];
+    const delta = spec.rel ? Math.abs(cur) * spec.rel : spec.abs;
+    if (!isFinite(delta) || delta === 0) return;    // e.g. no SS income to swing
+
+    const arms = [-1, 1].map(sign => {
+      const { p: q, R } = perturb(p, retireAge, spec.key, cur + sign * delta);
+      const moved = spec.key === 'retireAge' ? R !== retireAge : q[spec.key] !== cur;
+      if (!moved) return null;                      // clamped against a bound — no real swing
+      return { sign, label: swingLabel(spec, sign),
+               delta: (runMonteCarlo(q, R, SENS_N).successRate - base) * 100 };
+    }).filter(Boolean);
+
+    if (!arms.length) return;
+    rows.push({ label: spec.label, swing: spec.rel ? '\u00b1' + Math.round(spec.rel * 100) + '%'
+                                                 : '\u00b1' + swingLabel(spec, 1).slice(1), arms,
+                span: Math.max.apply(null, arms.map(a => Math.abs(a.delta))) });
+  });
+
+  rows.sort((a, b) => b.span - a.span);
+  return { base: base * 100, rows };
+}
+
+function renderSensitivity(res) {
+  const host = document.getElementById('sensRows');
+  const max  = Math.max(2, Math.max.apply(null, res.rows.map(r => r.span)));
+  const half = 50;   // each side of the centre line is 50% of the track
+
+  host.innerHTML = res.rows.map(r => {
+    const bars = r.arms.map((a, i) => {
+      const w   = Math.min(half, Math.abs(a.delta) / max * half * 0.95);
+      const top = r.arms.length === 1 ? 8 : (i === 0 ? 3 : 14);
+      const cls = Math.abs(a.delta) < 0.05 ? 'flat' : (a.delta > 0 ? 'up' : 'down');
+      const left = a.delta >= 0 ? half : half - w;
+      const tag  = a.label + ' \u2192 ' + (a.delta >= 0 ? '+' : '\u2212') +
+                   Math.abs(a.delta).toFixed(1) + ' pts';
+      const tagStyle = a.delta >= 0
+        ? 'left:calc(' + (half + w) + '% + 6px);'
+        : 'right:calc(' + (half + w) + '% + 6px);';
+      return '<div class="sens-bar ' + cls + '" style="left:' + left + '%;width:' + w +
+             '%;top:' + top + 'px;"></div>' +
+             '<div class="sens-tag" style="' + tagStyle + 'top:' + top + 'px;">' + tag + '</div>';
+    }).join('');
+    return '<div class="sens-row"><div class="sens-name">' + r.label +
+           '<span>' + r.swing + '</span></div><div class="sens-track">' + bars + '</div></div>';
+  }).join('');
+
+  document.getElementById('sensAxisLo').textContent = '\u2212' + max.toFixed(0) + ' pts';
+  document.getElementById('sensAxisHi').textContent = '+' + max.toFixed(0) + ' pts';
+
+  const lead = document.getElementById('sensLead');
+  const top  = res.rows[0];
+  if (!top || top.span < 0.5) {
+    lead.innerHTML = 'At ' + res.base.toFixed(0) + '% success, no single input moves the outcome ' +
+      'much — the plan is either comfortably funded or comfortably short.';
+  } else {
+    const best = top.arms.slice().sort((a, b) => b.delta - a.delta)[0];
+    lead.innerHTML = 'Biggest lever: <strong>' + top.label + '</strong> — a ' + best.label +
+      ' swing moves success from ' + res.base.toFixed(0) + '% to ' +
+      (res.base + best.delta).toFixed(0) + '%.';
+  }
+
+  document.getElementById('sensNote').textContent =
+    'Baseline ' + res.base.toFixed(0) + '% success from ' + SENS_N + ' simulations per run, ' +
+    'all sharing one random seed so the bars reflect the input, not simulation noise. ' +
+    'Rank order depends on your current inputs — re-read it after any big change.';
+}
+
+let sensTimer = null;
+function scheduleSensitivity(p, retireAge) {
+  clearTimeout(sensTimer);
+  const snapshot = Object.assign({}, p);
+  sensTimer = setTimeout(() => {
+    renderSensitivity(computeSensitivity(snapshot, retireAge));
+  }, 200);   // debounce: don't re-run 27 simulations mid-slider-drag
+}
+
 function project() {
   const stockPct = num('stockPct') / 100;
   const stockRet = num('stockRet') / 100;
@@ -772,6 +983,9 @@ function project() {
   const srEl = document.getElementById('s_successRate');
   srEl.textContent  = successPct.toFixed(1) + '%';
   srEl.style.color  = successPct >= 90 ? 'var(--good)' : successPct >= 70 ? 'var(--warn)' : 'var(--bad)';
+
+  // Sensitivity tornado — debounced so it never blocks a slider drag.
+  scheduleSensitivity(p, retireAge);
 
   // Chart — today's $: deterministic line + MC percentile bands.
   const labels  = rows.map(r => r.age);
