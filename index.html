@@ -191,6 +191,56 @@
     margin-left: 6px;
     vertical-align: middle;
   }
+
+  .info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px; height: 14px;
+    margin-left: 5px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--panel-2);
+    color: var(--text-dim);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    vertical-align: middle;
+    cursor: help;
+    user-select: none;
+    outline: none;
+  }
+  .info:hover, .info:focus, .info.open {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(74,158,255,0.12);
+  }
+  #tipbox {
+    position: fixed;
+    z-index: 1000;
+    width: 280px;
+    max-width: calc(100vw - 24px);
+    background: #0b1017;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--text);
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.12s ease;
+    pointer-events: none;
+  }
+  #tipbox.show { opacity: 1; visibility: visible; }
 </style>
 </head>
 <body>
@@ -204,19 +254,19 @@
       <div class="section-title">About you</div>
 
       <div class="input-row">
-        <label>Current age</label>
+        <label data-help="Your age today. The projection runs one year at a time from here.">Current age</label>
         <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_currentAge"></span>
       </div>
       <input class="slider" type="range" id="currentAge" min="20" max="70" step="1" value="35">
 
       <div class="input-row">
-        <label>Retirement age</label>
+        <label data-help="The age you stop working. Contributions stop and portfolio withdrawals begin in this year.">Retirement age</label>
         <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_retireAge"></span>
       </div>
       <input class="slider" type="range" id="retireAge" min="40" max="80" step="1" value="65">
 
       <div class="input-row">
-        <label>Plan to age</label>
+        <label data-help="The age your money has to last until — the end of the plan, not a prediction of your lifespan. Common practice is life expectancy plus a cushion (90–95). Higher = bigger nest egg required.">Plan to age</label>
         <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_planAge"></span>
       </div>
       <input class="slider" type="range" id="planAge" min="70" max="105" step="1" value="95">
@@ -224,13 +274,13 @@
       <div class="section-title">Savings &amp; income</div>
 
       <div class="input-row">
-        <label>Current savings</label>
+        <label data-help="Total invested balance today across every retirement and brokerage account (401(k), IRA, taxable). Leave out home equity and the emergency cash you won't invest.">Current savings</label>
         <span class="value">$<input type="text" inputmode="numeric" class="num-input" id="ni_currentSavings"></span>
       </div>
       <input class="slider" type="range" id="currentSavings" min="0" max="10000000" step="10000" value="100000">
 
       <div class="input-row">
-        <label>Annual savings (today's $)</label>
+        <label data-help="What you add to the portfolio each year until retirement, including any employer match. Entered in today's dollars and grown with inflation each year.">Annual savings (today's $)</label>
         <span class="value">$<input type="text" inputmode="numeric" class="num-input" id="ni_annualSavings"></span>
       </div>
       <input class="slider" type="range" id="annualSavings" min="0" max="500000" step="1000" value="25000">
@@ -238,25 +288,25 @@
       <div class="section-title">Retirement spending</div>
 
       <div class="input-row">
-        <label>Annual spending (today's $)</label>
+        <label data-help="What you'll spend per year in retirement, in today's dollars. The model inflates it every year so your buying power stays constant.">Annual spending (today's $)</label>
         <span class="value">$<input type="text" inputmode="numeric" class="num-input" id="ni_spending"></span>
       </div>
       <input class="slider" type="range" id="spending" min="0" max="1000000" step="1000" value="80000">
 
       <div class="input-row">
-        <label>Social Security / pension (today's $/yr)</label>
+        <label data-help="Guaranteed outside income in today's dollars. It's subtracted from spending, so the portfolio only has to cover the gap.">Social Security / pension (today's $/yr)</label>
         <span class="value">$<input type="text" inputmode="numeric" class="num-input" id="ni_ss"></span>
       </div>
       <input class="slider" type="range" id="ss" min="0" max="100000" step="500" value="30000">
 
       <div class="input-row">
-        <label>Benefits start at age</label>
+        <label data-help="When that income begins. Before this age the portfolio funds 100% of spending — the “bridge” years that drive most early-retirement risk.">Benefits start at age</label>
         <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_ssAge"></span>
       </div>
       <input class="slider" type="range" id="ssAge" min="55" max="75" step="1" value="67">
 
       <div class="input-row">
-        <label>Effective tax rate on withdrawals</label>
+        <label data-help="Your average (not marginal) tax rate on portfolio withdrawals. Withdrawals are grossed up so spending is met after tax. Use 0 for Roth accounts or if your spending figure is already pre-tax.">Effective tax rate on withdrawals</label>
         <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_taxRate">%</span>
       </div>
       <input class="slider" type="range" id="taxRate" min="0" max="50" step="1" value="20">
@@ -265,7 +315,7 @@
       <div class="section-title">Portfolio mix &amp; returns</div>
 
       <div class="input-row">
-        <label>Stocks / Bonds</label>
+        <label data-help="Your target asset mix. More stocks means higher expected return and wider swings. Volatility (σ) is re-derived from this mix automatically.">Stocks / Bonds</label>
         <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_stockPct">% / <span id="v_bondPct">30</span>%</span>
       </div>
       <input class="slider" type="range" id="stockPct" min="0" max="100" step="5" value="70">
@@ -275,25 +325,25 @@
       </div>
 
       <div class="input-row">
-        <label>Stock return (nominal)</label>
+        <label data-help="Expected long-run average annual stock return, before subtracting inflation. US history is ~10%; 7–8% is a conservative planning assumption.">Stock return (nominal)</label>
         <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_stockRet">%</span>
       </div>
       <input class="slider" type="range" id="stockRet" min="0" max="15" step="0.1" value="8">
 
       <div class="input-row">
-        <label>Bond return (nominal)</label>
+        <label data-help="Expected long-run average annual bond return, before inflation — roughly the current yield on intermediate Treasuries (~4%).">Bond return (nominal)</label>
         <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_bondRet">%</span>
       </div>
       <input class="slider" type="range" id="bondRet" min="0" max="10" step="0.1" value="4">
 
       <div class="input-row">
-        <label>Inflation</label>
+        <label data-help="Annual rise in the cost of living. It's subtracted from nominal returns to get real returns, and it grows your spending and savings each year. Long-run US average is ~3%.">Inflation</label>
         <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_inflation">%</span>
       </div>
       <input class="slider" type="range" id="inflation" min="0" max="8" step="0.1" value="3">
 
       <div class="input-row">
-        <label>Annual volatility (σ)</label>
+        <label data-help="Standard deviation of the annual portfolio return — how bumpy the ride is. In roughly 2 years out of 3 the return lands within ±σ of the average. Affects the Monte Carlo bands and success odds only, not the constant-return line.">Annual volatility (σ)</label>
         <span class="value"><input type="text" inputmode="decimal" class="num-input" id="ni_sigma">%</span>
       </div>
       <input class="slider" type="range" id="sigma" min="0" max="30" step="0.5" value="12">
@@ -302,19 +352,19 @@
       <div class="section-title">Bond tent</div>
 
       <div class="input-row" style="margin-bottom:6px;">
-        <label for="tentEnabled" style="cursor:pointer;">Enable bond tent at retirement</label>
+        <label for="tentEnabled" style="cursor:pointer;" data-help="Temporarily raise your bond allocation around retirement, then unwind back to target. A crash in the first few retirement years does the most damage (sequence-of-returns risk); the tent cushions exactly that window.">Enable bond tent at retirement</label>
         <input type="checkbox" id="tentEnabled" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;">
       </div>
 
       <div id="tentSection" style="display:none;">
         <div class="input-row">
-          <label>Peak bond % at retirement</label>
+          <label data-help="The most conservative point of the tent, applied in the retirement year itself. Set it above your target bond % for a real tent.">Peak bond % at retirement</label>
           <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_tentBondPct">%</span>
         </div>
         <input class="slider" type="range" id="tentBondPct" min="0" max="100" step="5" value="50">
 
         <div class="input-row">
-          <label>Years to unwind to target allocation</label>
+          <label data-help="How long the allocation glides from the peak bond mix back to your target. Longer = more downside protection, lower expected growth.">Years to unwind to target allocation</label>
           <span class="value"><input type="text" inputmode="numeric" class="num-input" id="ni_tentYears"> yrs</span>
         </div>
         <input class="slider" type="range" id="tentYears" min="1" max="20" step="1" value="7">
@@ -329,32 +379,32 @@
 
       <div class="results">
         <div class="stat">
-          <div class="stat-label">Blended portfolio return</div>
+          <div class="stat-label" data-help="Weighted average of your stock and bond returns for that year's allocation. The real figure (after inflation) is what actually determines buying power.">Blended portfolio return</div>
           <div class="stat-value" id="s_blended">–</div>
           <div class="stat-sub">Real (after inflation): <span id="s_real">–</span></div>
         </div>
         <div class="stat">
-          <div class="stat-label">Portfolio at retirement</div>
+          <div class="stat-label" data-help="Projected balance in the year you retire, assuming the average return happens every year with no volatility.">Portfolio at retirement</div>
           <div class="stat-value" id="s_atRetire">–</div>
           <div class="stat-sub">In today's $: <span id="s_atRetireReal">–</span></div>
         </div>
         <div class="stat">
-          <div class="stat-label">Nest egg needed</div>
+          <div class="stat-label" data-help="The balance you'd need at retirement to fund spending minus outside income all the way to your plan-to age, expressed in today's dollars.">Nest egg needed</div>
           <div class="stat-value" id="s_required">–</div>
           <div class="stat-sub">Today's $ to fund through age <span id="s_planAge2">95</span></div>
         </div>
         <div class="stat">
-          <div class="stat-label">Surplus / shortfall</div>
+          <div class="stat-label" data-help="Projected portfolio minus what's needed. Positive means you're on track under constant average returns — check the success probability for how it holds up under volatility.">Surplus / shortfall</div>
           <div class="stat-value" id="s_gap">–</div>
           <div class="stat-sub" id="s_gapNote">in today's $</div>
         </div>
         <div class="stat" id="stat_success">
-          <div class="stat-label">Probability of success</div>
+          <div class="stat-label" data-help="Share of 1,000 randomized return paths in which the money lasts to your plan-to age. 80–90% is generally considered a solid plan; 100% usually means you're saving more than you need to.">Probability of success</div>
           <div class="stat-value" id="s_successRate">–</div>
           <div class="stat-sub" id="s_successSub">Monte Carlo, 1,000 simulations</div>
         </div>
         <div class="stat" style="border-color: var(--accent); background: rgba(74,158,255,0.08);">
-          <div class="stat-label">Earliest breakeven retirement age</div>
+          <div class="stat-label" data-help="The soonest you could retire and still have the plan work at the selected outcome percentile. P25 means it survives in three out of four simulated markets; P10 is more conservative, P50 is a coin flip.">Earliest breakeven retirement age</div>
           <div class="stat-value" id="s_breakeven">–</div>
           <div class="stat-sub" id="s_breakevenSub" style="margin-bottom:6px;">–</div>
           <div style="display:flex;gap:4px;margin-bottom:6px;">
@@ -952,6 +1002,67 @@ inputs.forEach(id => {
 loadInputs();
 autoDeriveSigma(); // ensure σ matches loaded allocation
 project();
+</script>
+
+<script>
+// ---- Contextual help tooltips -------------------------------------------
+(() => {
+  const tip = document.createElement('div');
+  tip.id = 'tipbox';
+  tip.setAttribute('role', 'tooltip');
+  document.body.appendChild(tip);
+
+  let current = null;
+
+  function show(icon) {
+    if (current && current !== icon) current.classList.remove('open');
+    current = icon;
+    icon.classList.add('open');
+    tip.textContent = icon.dataset.text;
+    tip.classList.add('show');
+
+    const r = icon.getBoundingClientRect();
+    const t = tip.getBoundingClientRect();
+    const margin = 8;
+    let left = r.left + r.width / 2 - t.width / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - t.width - margin));
+    let top = r.top - t.height - 8;
+    if (top < margin) top = r.bottom + 8;              // flip below when tight
+    tip.style.left = left + 'px';
+    tip.style.top  = top + 'px';
+  }
+
+  function hide() {
+    tip.classList.remove('show');
+    if (current) current.classList.remove('open');
+    current = null;
+  }
+
+  document.querySelectorAll('[data-help]').forEach(el => {
+    const icon = document.createElement('span');
+    icon.className = 'info';
+    icon.textContent = '?';
+    icon.tabIndex = 0;
+    icon.dataset.text = el.dataset.help;
+    icon.setAttribute('role', 'button');
+    icon.setAttribute('aria-label', 'What is this? ' + el.dataset.help);
+    el.appendChild(icon);
+
+    icon.addEventListener('mouseenter', () => show(icon));
+    icon.addEventListener('mouseleave', hide);
+    icon.addEventListener('focus', () => show(icon));
+    icon.addEventListener('blur', hide);
+    icon.addEventListener('click', (e) => {
+      e.preventDefault();      // don't toggle the checkbox this label controls
+      e.stopPropagation();
+      if (current === icon) { hide(); } else { show(icon); icon.focus(); }
+    });
+  });
+
+  window.addEventListener('scroll', hide, true);
+  window.addEventListener('resize', hide);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+})();
 </script>
 </body>
 </html>
